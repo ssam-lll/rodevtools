@@ -1,40 +1,21 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
-  --color-background,
-  --color-primary,
-  --color-border,
-  --color-input,
-  --color-ring,
-  --color-card
-}
+/* @custom-variant dark(...) ; */
 
-;
-
+/* @theme inline {
+  
+} */
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-}
+/*.dark { ... };*/
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    @apply font-sans antialiased;
-  }
-}
+/*@layer base { ... };*/
 
 @theme inline {
   --color-background: var(--background);
