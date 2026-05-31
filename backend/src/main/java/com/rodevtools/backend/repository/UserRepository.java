@@ -1,4 +1,4 @@
 package com.rodevtools.backend.repository;
 
-public interface GameSnapshotRepository {
+public interface UserRepository {
 }

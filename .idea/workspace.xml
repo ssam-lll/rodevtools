@@ -5,15 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d8aed61d-1702-44ff-943e-45f8dd3adb8d" name="Changes" comment="CAMBIOS Y MEJORAS EN EL FRONTEND &#10;&#10;se cambio la navegación para ahora tener una navegación lateral más parecida a RoTrends&#10;&#10;se eliminaron detalles que hacian que la UI se viera hecha demasiada con IA">
-      <change afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules/backend.main.iml" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/rodevtools/backend/model/User.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/rodevtools/backend/repository/UserRepository.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/rodevtools/backend/repository/projection/RisingStarProjection.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/rodevtools/backend/model/Game.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/rodevtools/backend/model/Game.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/rodevtools/backend/model/GameSnapshot.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/rodevtools/backend/model/GameSnapshot.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/rodevtools/backend/model/UserRadar.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/rodevtools/backend/model/UserRadar.java" afterDir="false" />
@@ -103,17 +97,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;Desarrollo-del-frontend&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "mejoras-frontend",
+    "kotlin-language-version-configured": "true",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
-}</component>
+}]]></component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="d8aed61d-1702-44ff-943e-45f8dd3adb8d" name="Changes" comment="" />
