@@ -1,29 +1,35 @@
 package com.rodevtools.backend.model;
 
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
-@Table(name = "user_radar")
+@Table
 @Data
 @RequiredArgsConstructor
-
-
-public class UserRadar {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private UUID userUuid;
+    @Column(nullable = false, unique = true)
+    private String username;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "universe_id", nullable = false)
-    private Game game;
+    @Column(nullable = false)
+    private String passwordHash;
 
+    @Column(nullable = false)
+    private String salt;
+
+    @Column(nullable = false)
+    private String role;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
 }
