@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { GitCompare, Plus, Trash2, Users, DollarSign, Eye, Heart, Clock, FolderOpen, Pencil, X, Check, BarChart3, Activity } from "lucide-react";
+import { GitCompare, Plus, Trash2, Users, DollarSign, Eye, Heart, Clock, FolderOpen, Pencil, X, Check, BarChart3, Activity, LogIn } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import GameThumbnail from "@/components/GameThumbnail";
+import AuthModal from "@/components/AuthModal";
 import {
   ResponsiveContainer,
   LineChart,
@@ -43,13 +44,17 @@ const COMPARISON_PERIODS = [
   { label: "Previous 3 Months", value: 90 },
 ];
 
-function getUserKey(): string {
-  // Try to get user from localStorage (set during auth)
-  return "guest";
-}
-
 function getCollections(): Record<string, Collection> {
-  const userKey = getUserKey();
+  let userKey = "guest";
+  try {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.email) {
+        userKey = parsed.email;
+      }
+    }
+  } catch {}
   const storageKey = `collections_${userKey}`;
   try {
     return JSON.parse(localStorage.getItem(storageKey) || "{}");
@@ -59,7 +64,16 @@ function getCollections(): Record<string, Collection> {
 }
 
 function saveCollections(collections: Record<string, Collection>) {
-  const userKey = getUserKey();
+  let userKey = "guest";
+  try {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.email) {
+        userKey = parsed.email;
+      }
+    }
+  } catch {}
   const storageKey = `collections_${userKey}`;
   localStorage.setItem(storageKey, JSON.stringify(collections));
 }
@@ -75,19 +89,47 @@ export default function ComparePage() {
   const [editingName, setEditingName] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<any | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setMounted(true);
-    // Load collections from localStorage
-    setCollections(getCollections());
+
+    const handleAuthChange = () => {
+      const stored = localStorage.getItem("user");
+      let currentUser = null;
+      if (stored) {
+        try {
+          currentUser = JSON.parse(stored);
+          setUser(currentUser);
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+
+      const userKey = currentUser && currentUser.email ? currentUser.email : "guest";
+      const storageKey = `collections_${userKey}`;
+      try {
+        setCollections(JSON.parse(localStorage.getItem(storageKey) || "{}"));
+      } catch {
+        setCollections({});
+      }
+    };
+
+    handleAuthChange();
+    window.addEventListener("auth-change", handleAuthChange);
 
     // Fetch games database
     fetch("/api/universes")
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        const gamesArray = Array.isArray(data) ? data : (data && Array.isArray(data.content) ? data.content : []);
+        if (gamesArray.length > 0) {
           const dbObj: Record<string, GameCompareData> = {};
-          data.forEach((game) => {
+          gamesArray.forEach((game: any) => {
             dbObj[game.universeId] = game;
           });
           setDatabase(dbObj);
@@ -98,6 +140,10 @@ export default function ComparePage() {
         console.error("Error loading games for comparison:", err);
         setLoading(false);
       });
+
+    return () => {
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
   }, []);
 
   // Get games for active collection
@@ -108,7 +154,7 @@ export default function ComparePage() {
 
   const [comparedGamesHistory, setComparedGamesHistory] = useState<Record<string, { dailyMetrics: any[] }>>({});
   const [activeCompareTab, setActiveCompareTab] = useState<"ccu" | "visits" | "playtime" | "revenue">("ccu");
-  const [timeframe, setTimeframe] = useState<number | null>(null);
+  const [timeframe, setTimeframe] = useState<number | null>(30);
   const [comparisonPeriod, setComparisonPeriod] = useState<number | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -187,7 +233,18 @@ export default function ComparePage() {
         dateKey,
         ...entry,
       }))
-      .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+      .sort((a, b) => {
+        const partsA = a.dateKey.split('-').map(Number);
+        const partsB = b.dateKey.split('-').map(Number);
+        for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+          const valA = partsA[i] || 0;
+          const valB = partsB[i] || 0;
+          if (valA !== valB) {
+            return valA - valB;
+          }
+        }
+        return 0;
+      });
 
     if (timeframe) {
       return combined.slice(-timeframe);
@@ -214,6 +271,7 @@ export default function ComparePage() {
 
   // Delete collection
   const deleteCollection = useCallback((name: string) => {
+    const deletedGames = collections[name]?.games || [];
     const updated = { ...collections };
     delete updated[name];
     setCollections(updated);
@@ -221,7 +279,22 @@ export default function ComparePage() {
     if (activeCollectionName === name) {
       setActiveCollectionName(null);
     }
-  }, [collections, activeCollectionName]);
+
+    // Sync deletions to Supabase: remove games not in any remaining collection
+    if (user && user.token && deletedGames.length > 0) {
+      deletedGames.forEach((gameId: string) => {
+        const isInOtherCollection = Object.values(updated).some(
+          (col) => Array.isArray(col.games) && col.games.map(String).includes(String(gameId))
+        );
+        if (!isInOtherCollection) {
+          fetch(`/api/radar/${gameId}`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${user.token}` }
+          }).catch(err => console.error("Error removing game from radar on collection delete:", err));
+        }
+      });
+    }
+  }, [collections, activeCollectionName, user]);
 
   // Rename collection
   const renameCollection = useCallback((oldName: string) => {
@@ -242,34 +315,122 @@ export default function ComparePage() {
   }, [editNameValue, collections, activeCollectionName]);
 
   // Add game to active collection
-  const addGameToCollection = useCallback((id: string) => {
+  const addGameToCollection = useCallback((id: string | number) => {
     if (!activeCollectionName || !collections[activeCollectionName]) return;
-    if (collections[activeCollectionName].games.includes(id)) return;
-    if (collections[activeCollectionName].games.length >= 5) return;
+    
+    const gameIdStr = String(id);
+    const existingGames = Array.isArray(collections[activeCollectionName].games)
+      ? collections[activeCollectionName].games.map(String)
+      : [];
+
+    if (existingGames.includes(gameIdStr)) return;
+    if (existingGames.length >= 3) return;
 
     const updated = { ...collections };
     updated[activeCollectionName] = {
       ...updated[activeCollectionName],
-      games: [...updated[activeCollectionName].games, id],
+      games: [...existingGames, gameIdStr],
       updatedAt: Date.now(),
     };
     setCollections(updated);
     saveCollections(updated);
+
+    // Sync with backend user radar if logged in
+    if (user && user.token) {
+      fetch("/api/radar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user.token}`
+        },
+        body: JSON.stringify({ universeId: Number(id) })
+      }).catch(err => console.error("Error syncing to backend radar:", err));
+    }
+
     setSelectorOpen(false);
-  }, [activeCollectionName, collections]);
+  }, [activeCollectionName, collections, user]);
 
   // Remove game from active collection
-  const removeGameFromCollection = useCallback((id: string) => {
+  const removeGameFromCollection = useCallback((id: string | number) => {
     if (!activeCollectionName || !collections[activeCollectionName]) return;
+    
+    const gameIdStr = String(id);
+    const existingGames = Array.isArray(collections[activeCollectionName].games)
+      ? collections[activeCollectionName].games.map(String)
+      : [];
+
     const updated = { ...collections };
     updated[activeCollectionName] = {
       ...updated[activeCollectionName],
-      games: updated[activeCollectionName].games.filter((g) => g !== id),
+      games: existingGames.filter((g) => g !== gameIdStr),
       updatedAt: Date.now(),
     };
     setCollections(updated);
     saveCollections(updated);
-  }, [activeCollectionName, collections]);
+
+    // Sync deletion with backend user radar if logged in and not present in other collections
+    if (user && user.token) {
+      const isGameInOtherCollections = Object.entries(updated).some(([name, col]) => {
+        if (name === activeCollectionName) return false;
+        return Array.isArray(col.games) && col.games.map(String).includes(gameIdStr);
+      });
+
+      if (!isGameInOtherCollections) {
+        fetch(`/api/radar/${id}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${user.token}`
+          }
+        }).catch(err => console.error("Error deleting from backend radar:", err));
+      }
+    }
+  }, [activeCollectionName, collections, user]);
+
+  // Dynamically fetch details for games in active collection that are missing from database
+  useEffect(() => {
+    if (!activeCollection || !Array.isArray(activeCollection.games) || activeCollection.games.length === 0) return;
+
+    const missingIds = activeCollection.games.map(String).filter((id) => !database[id]);
+    if (missingIds.length === 0) return;
+
+    Promise.all(
+      missingIds.map(async (id) => {
+        try {
+          const res = await fetch(`/api/universes?id=${id}`);
+          if (res.ok) {
+            const data = await res.json();
+            return { id, data };
+          }
+        } catch (e) {
+          console.error(`Error fetching missing collection game ${id}:`, e);
+        }
+        return null;
+      })
+    ).then((results) => {
+      const newEntries: Record<string, GameCompareData> = {};
+      results.forEach((r) => {
+        if (r && r.data) {
+          newEntries[r.id] = {
+            universeId: String(r.data.universeId || r.id),
+            name: r.data.name || r.data.gameName || "Unknown Game",
+            creator: r.data.creator || r.data.creatorName || "Unknown Creator",
+            activePlayers: r.data.activePlayers || r.data.playing || 0,
+            monthlyRevenue: r.data.monthlyRevenue || 0,
+            visits: r.data.visits || 0,
+            healthScore: r.data.healthScore || r.data.rating || 0,
+            playtime: r.data.playtime || 0
+          };
+        }
+      });
+
+      if (Object.keys(newEntries).length > 0) {
+        setDatabase((prev) => ({
+          ...prev,
+          ...newEntries
+        }));
+      }
+    });
+  }, [activeCollection, database]);
 
   // Find winner helper
   const getWinnerId = (metric: keyof GameCompareData): string | null => {
@@ -303,16 +464,25 @@ export default function ComparePage() {
   const formatCurrency = (num: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(num);
 
-  const availableOptions = Object.keys(database).filter(
-    (id) => !activeCollection?.games.includes(id)
-  );
+  const availableOptions = Object.keys(database).filter((id) => {
+    const gamesList = activeCollection && Array.isArray(activeCollection.games)
+      ? activeCollection.games.map(String)
+      : [];
+    return !gamesList.includes(String(id));
+  });
+
+  const filteredOptions = availableOptions.filter((id) => {
+    const name = database[id].name.toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
+    return name.includes(query) || id.includes(query);
+  });
 
   // Metrics config for the comparison table
   const metrics = [
     { key: "activePlayers" as const, label: "Active CCU", icon: Users, iconColor: "text-primary", format: formatNumber },
     { key: "monthlyRevenue" as const, label: "Est. Monthly Revenue", icon: DollarSign, iconColor: "text-amber-400", format: formatCurrency },
     { key: "visits" as const, label: "Total Visits", icon: Eye, iconColor: "text-secondary-container", format: formatNumber },
-    { key: "healthScore" as const, label: "Health Score", icon: Heart, iconColor: "text-red-400", format: (v: number) => `${v}/100` },
+    { key: "healthScore" as const, label: "Rating", icon: Heart, iconColor: "text-red-400", format: (v: number) => `${Math.round(v)}%` },
     { key: "playtime" as const, label: "Avg Playtime", icon: Clock, iconColor: "text-blue-400", format: (v: number) => `${v} min` },
   ];
 
@@ -367,43 +537,76 @@ export default function ComparePage() {
               <span className="text-body-md text-on-surface-variant font-mono">Loading metrics...</span>
             </div>
           </div>
-        ) : !mounted ? null : activeCollectionName && activeCollection ? (
+        ) : !mounted ? null : !user ? (
+          /* Sign In Prompt when not logged in */
+          <div className="max-w-[500px] mx-auto py-xl text-center animate-fade-in">
+            <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-md shadow-[0_0_15px_rgba(0,175,244,0.15)]">
+              <FolderOpen className="w-8 h-8 text-primary animate-pulse" />
+            </div>
+            <h2 className="text-headline-md font-bold text-foreground">Sign In Required</h2>
+            <p className="text-body-md text-on-surface-variant mt-xs mb-lg">
+              Please sign in to view and manage collections. Collections allow you to compare your favorite Roblox titles side-by-side.
+            </p>
+            <button
+              onClick={() => setAuthModalOpen(true)}
+              className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary-container transition-all cursor-pointer shadow-[0_0_10px_rgba(0,175,244,0.2)]"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Sign In</span>
+            </button>
+          </div>
+        ) : activeCollectionName && activeCollection ? (
           /* Active Collection - Comparison View */
           <div className="space-y-lg animate-fade-in">
             {/* Collection Header */}
             <div className="flex items-center justify-between gap-md">
               <h2 className="text-headline-md font-bold">{activeCollectionName}</h2>
-              {activeCollection.games.length < 5 && (
+              {activeCollection.games.length < 3 && (
                 <div className="relative">
                   <button
                     onClick={() => setSelectorOpen(!selectorOpen)}
                     className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary-container transition-all"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Add Game ({activeCollection.games.length}/5)</span>
+                    <span>Add Game ({activeCollection.games.length}/3)</span>
                   </button>
 
                   {selectorOpen && (
                     <div className="absolute right-0 mt-xs w-72 rounded-lg border border-outline bg-surface-container shadow-2xl z-50 p-xs max-h-64 overflow-y-auto">
-                      {availableOptions.length > 0 ? (
-                        availableOptions.map((id) => (
-                          <button
-                            key={id}
-                            onClick={() => addGameToCollection(id)}
-                            className="w-full text-left px-sm py-sm rounded hover:bg-surface-container-high text-body-sm font-semibold flex items-center gap-sm transition-colors"
-                          >
-                            <GameThumbnail universeId={id} size="sm" />
-                            <div className="flex-1 min-w-0">
-                              <div className="text-foreground truncate">{database[id].name}</div>
-                              <div className="text-xs text-on-surface-variant font-mono">{id}</div>
-                            </div>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="text-center py-md text-body-sm text-on-surface-variant">
-                          All available games added
-                        </div>
-                      )}
+                      {/* Search Bar inside selector */}
+                      <div className="p-1 border-b border-outline-variant/30 sticky top-0 bg-surface-container z-10">
+                        <input
+                          type="text"
+                          placeholder="Search game..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full px-sm py-xs text-xs rounded bg-surface-container-high border border-outline-variant/60 focus:outline-none focus:border-primary placeholder:text-on-surface-variant/40"
+                        />
+                      </div>
+                      <div className="mt-1">
+                        {filteredOptions.length > 0 ? (
+                          filteredOptions.map((id) => (
+                            <button
+                              key={id}
+                              onClick={() => {
+                                addGameToCollection(id);
+                                setSearchQuery("");
+                              }}
+                              className="w-full text-left px-sm py-sm rounded hover:bg-surface-container-high text-body-sm font-semibold flex items-center gap-sm transition-colors"
+                            >
+                              <GameThumbnail universeId={id} size="sm" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-foreground truncate">{database[id].name}</div>
+                                <div className="text-xs text-on-surface-variant font-mono">{id}</div>
+                              </div>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="text-center py-md text-body-sm text-on-surface-variant">
+                            {availableOptions.length > 0 ? "No matches found" : "All available games added"}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -540,7 +743,7 @@ export default function ComparePage() {
                         ].map((tf) => (
                           <button
                             key={tf.label}
-                            onClick={() => setTimeframe(tf.value)}
+                            onClick={() => { setTimeframe(tf.value); setComparisonPeriod(null); }}
                             className={`px-sm py-xs rounded-md text-xs font-semibold transition-all cursor-pointer ${
                               timeframe === tf.value
                                 ? "bg-primary/15 text-primary border border-primary/30"
@@ -552,33 +755,30 @@ export default function ComparePage() {
                         ))}
                       </div>
 
-                      {/* Comparison Selector */}
-                      <div className="flex flex-wrap items-center gap-xs">
-                        <span className="text-xs text-on-surface-variant font-medium mr-xs">Compare with:</span>
-                        <button
-                          onClick={() => setComparisonPeriod(null)}
-                          className={`px-sm py-xs rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                            comparisonPeriod === null
-                              ? "bg-primary/15 text-primary border border-primary/30"
-                              : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
-                          }`}
-                        >
-                          None
-                        </button>
-                        {COMPARISON_PERIODS.map((period) => (
-                          <button
-                            key={period.value}
-                            onClick={() => setComparisonPeriod(period.value)}
-                            className={`px-sm py-xs rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                              comparisonPeriod === period.value
-                                ? "bg-primary/15 text-primary border border-primary/30"
-                                : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
-                            }`}
-                          >
-                            {period.label}
-                          </button>
-                        ))}
-                      </div>
+                      {/* Compare with — only the matching period for the active timeframe */}
+                      {timeframe !== null && (() => {
+                        const matchMap: Record<number, { label: string; value: number }> = {
+                          7:  { label: "vs. Previous Week",   value: 7  },
+                          30: { label: "vs. Previous Month",  value: 30 },
+                          90: { label: "vs. Previous 3 Months", value: 90 },
+                        };
+                        const option = matchMap[timeframe];
+                        if (!option) return null;
+                        return (
+                          <div className="flex items-center gap-xs">
+                            <button
+                              onClick={() => setComparisonPeriod(comparisonPeriod === option.value ? null : option.value)}
+                              className={`px-sm py-xs rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                                comparisonPeriod === option.value
+                                  ? "bg-primary/15 text-primary border border-primary/30"
+                                  : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
+                              }`}
+                            >
+                              {comparisonPeriod === option.value ? `✓ ${option.label}` : option.label}
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="h-80">
@@ -650,6 +850,7 @@ export default function ComparePage() {
                                     stroke={METRIC_COLORS[idx % METRIC_COLORS.length]}
                                     strokeWidth={2.5}
                                     dot={{ r: 4 }}
+                                    connectNulls
                                   />
                                   {comparisonPeriod && (
                                     <Line
@@ -807,6 +1008,7 @@ export default function ComparePage() {
           </div>
         )}
       </div>
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </main>
   );
 }
