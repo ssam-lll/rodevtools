@@ -7,14 +7,12 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class GameResponseDto {
+public class RisingStarResponseDto {
     private Long universeId;
     private String name;
     private String creator;
     private Long activePlayers;
-    private Long visits;
+    private Double growth24h;
+    private Double monthlyRevenueEst;
     private Double healthScore;
-    private String category;
-    private Double monthlyRevenue;
-    private Integer playtime;
 }

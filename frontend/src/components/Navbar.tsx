@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 import AuthModal from "./AuthModal";
 import Logo from "@/components/Logo";
 import { 
@@ -17,31 +16,42 @@ import {
   User
 } from "lucide-react";
 
+interface UserSession {
+  username: string;
+  email?: string;
+  role: string;
+  token: string;
+}
+
 export default function Navbar() {
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserSession | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  
-  const supabase = createClient();
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+    const handleAuthChange = () => {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        try {
+          setUser(JSON.parse(stored));
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
     };
-    getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
+    handleAuthChange();
+    window.addEventListener("auth-change", handleAuthChange);
     return () => {
-      subscription.unsubscribe();
+      window.removeEventListener("auth-change", handleAuthChange);
     };
-  }, [supabase]);
+  }, []);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
+  const handleSignOut = () => {
+    localStorage.removeItem("user");
+    window.dispatchEvent(new Event("auth-change"));
   };
 
   const navItems = [
@@ -107,12 +117,12 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center gap-xs bg-surface-container/40 border border-outline-variant/30 rounded-lg p-1 pr-2.5 shadow-sm">
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs uppercase border border-primary/30">
-                  {user.email?.[0] || <User className="w-3 h-3" />}
+                  {user.username?.[0] || <User className="w-3 h-3" />}
                 </div>
                 <div className="flex flex-col max-w-[80px] md:max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
                   <span className="text-[9px] text-on-surface-variant font-medium leading-none mb-0.5">Logged in</span>
-                  <span className="text-xs font-semibold text-foreground leading-none overflow-hidden text-ellipsis" title={user.email}>
-                    {user.email?.split("@")[0]}
+                  <span className="text-xs font-semibold text-foreground leading-none overflow-hidden text-ellipsis" title={user.username}>
+                    {user.username}
                   </span>
                 </div>
                 <button

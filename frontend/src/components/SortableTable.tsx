@@ -27,6 +27,12 @@ interface SortableTableProps<T> {
   emptyMessage?: string;
   rowKey: (item: T) => string;
   rowClassName?: string;
+  // Server-side pagination props
+  currentPage?: number;
+  totalPages?: number;
+  totalElements?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
 }
 
 function NumericFilterPopover({
@@ -177,7 +183,13 @@ export default function SortableTable<T>({
   emptyMessage = "No data found.",
   rowKey,
   rowClassName = "",
+  currentPage,
+  totalPages,
+  totalElements,
+  pageSize,
+  onPageChange,
 }: SortableTableProps<T>) {
+  const hasPagination = totalPages !== undefined && totalPages > 1 && onPageChange;
   const [sortKey, setSortKey] = useState<string | null>(defaultSortKey || null);
   const [sortDir, setSortDir] = useState<SortDirection>(defaultSortDir);
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -445,6 +457,54 @@ export default function SortableTable<T>({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {hasPagination && (
+        <div className="flex items-center justify-between px-md py-sm border-t border-outline-variant/30 bg-surface-container/30">
+          <span className="text-xs text-on-surface-variant font-mono">
+            {totalElements !== undefined
+              ? `${(currentPage! * (pageSize || 20)) + 1}–${Math.min((currentPage! + 1) * (pageSize || 20), totalElements)} of ${totalElements.toLocaleString()}`
+              : `Page ${(currentPage || 0) + 1} of ${totalPages}`
+            }
+          </span>
+          <div className="flex items-center gap-xs">
+            <button
+              onClick={() => onPageChange!(currentPage! - 1)}
+              disabled={currentPage === 0}
+              className="px-sm py-1 rounded-md text-xs font-semibold border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+            >
+              ← Previous
+            </button>
+            {/* Page number buttons (show up to 5) */}
+            {(() => {
+              const pages: number[] = [];
+              const start = Math.max(0, (currentPage || 0) - 2);
+              const end = Math.min(totalPages!, start + 5);
+              for (let i = start; i < end; i++) pages.push(i);
+              return pages.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => onPageChange!(p)}
+                  className={`w-8 h-8 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    p === currentPage
+                      ? "bg-primary text-on-primary shadow-[0_0_10px_rgba(0,175,244,0.3)]"
+                      : "border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30"
+                  }`}
+                >
+                  {p + 1}
+                </button>
+              ));
+            })()}
+            <button
+              onClick={() => onPageChange!(currentPage! + 1)}
+              disabled={currentPage === totalPages! - 1}
+              className="px-sm py-1 rounded-md text-xs font-semibold border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

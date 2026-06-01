@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/utils/supabase/client";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { X, Mail, Lock, Loader2, Sparkles } from "lucide-react";
+import { X, User, Lock, Loader2 } from "lucide-react";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -21,8 +20,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   if (!isOpen) return null;
 
-  const supabase = createClient();
-
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -30,23 +27,39 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setMessage(null);
 
     try {
+      const endpoint = isSignUp ? "/api/auth/register" : "/api/auth/login";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "An error occurred.");
+      }
+
       if (isSignUp) {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        if (signUpError) throw signUpError;
-        setMessage("Verify your email to confirm registration.");
+        setMessage("Registration successful! You can now sign in.");
+        setIsSignUp(false);
+        setEmail("");
+        setPassword("");
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (signInError) throw signInError;
+        localStorage.setItem("user", JSON.stringify({
+          username: data.email,
+          email: data.email,
+          role: data.role,
+          token: data.token,
+        }));
+        window.dispatchEvent(new Event("auth-change"));
         onClose();
       }
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unexpected error occurred.";
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -126,12 +139,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-outline/60 pointer-events-none">
-                <Mail className="w-4 h-4" />
+                <User className="w-4 h-4" />
               </span>
               <Input
                 type="email"
                 required
-                placeholder="your@email.com"
+                placeholder="email@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-9"
@@ -191,7 +204,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <>
               Already have an account?{" "}
               <button 
-                onClick={() => { setIsSignUp(false); setError(null); setMessage(null); }}
+                onClick={() => { setIsSignUp(false); setError(null); setMessage(null); setEmail(""); setPassword(""); }}
                 className="text-primary hover:underline font-medium"
               >
                 Sign In
@@ -199,9 +212,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </>
           ) : (
             <>
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <button 
-                onClick={() => { setIsSignUp(true); setError(null); setMessage(null); }}
+                onClick={() => { setIsSignUp(true); setError(null); setMessage(null); setEmail(""); setPassword(""); }}
                 className="text-primary hover:underline font-medium"
               >
                 Sign up for free

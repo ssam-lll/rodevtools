@@ -2,14 +2,18 @@ package com.rodevtools.backend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "games")
 @Data
-@RequiredArgsConstructor
+@NoArgsConstructor
 
 
 public class Game {
@@ -17,9 +21,10 @@ public class Game {
     @Id
     private Long universeId;
 
-    @Column(nullable = false)
+    @Column(name = "name", nullable = false)
     private String gameName;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     private Long visits;
@@ -40,9 +45,11 @@ public class Game {
 
     private LocalDateTime robloxUpdatedAt;
 
-    private LocalDateTime lastSyncedAt;
+    @Column(name = "category")
+    private String category;
 
-
-
+    @LastModifiedDate
+    @Column(nullable = false)
+    private Instant lastSyncedAt;
 
 }

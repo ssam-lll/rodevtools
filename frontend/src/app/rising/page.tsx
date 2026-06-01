@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { TrendingUp, Search, ArrowUpRight } from "lucide-react";
 import GameThumbnail from "@/components/GameThumbnail";
@@ -16,18 +16,56 @@ interface RisingStarGame {
   healthScore: number;
 }
 
+interface PaginatedResponse {
+  content: RisingStarGame[];
+  totalPages: number;
+  totalElements: number;
+  number: number; // current page (0-indexed)
+  size: number;
+}
+
 export default function RisingPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [games, setGames] = useState<RisingStarGame[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [pageSize] = useState(20);
+  const [sortKey, setSortKey] = useState("playing");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
+  // Debounce search input (300ms)
   useEffect(() => {
-    fetch("/api/universes")
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(0); // Reset to first page on search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const fetchGames = useCallback(() => {
+    setLoading(true);
+    const params = new URLSearchParams({
+      page: currentPage.toString(),
+      size: pageSize.toString(),
+      sort: sortKey,
+      dir: sortDir,
+    });
+
+    if (debouncedSearch) {
+      params.set("search", debouncedSearch);
+    }
+
+    fetch(`/api/universes/rising?${params}`)
       .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setGames(data);
+      .then((data: PaginatedResponse) => {
+        if (data.content && Array.isArray(data.content)) {
+          setGames(data.content);
+          setTotalPages(data.totalPages);
+          setTotalElements(data.totalElements);
         }
         setLoading(false);
       })
@@ -35,14 +73,16 @@ export default function RisingPage() {
         console.error("Error loading games:", err);
         setLoading(false);
       });
-  }, []);
+  }, [currentPage, pageSize, sortKey, sortDir, debouncedSearch]);
 
-  // Filter games based on search query
-  const filteredGames = games.filter(
-    (game) =>
-      game.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      game.creator.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    fetchGames();
+  }, [fetchGames]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
@@ -52,7 +92,7 @@ export default function RisingPage() {
     return new Intl.NumberFormat("en-US").format(val);
   };
 
-  // Dynamic statistics
+  // Dynamic statistics — from current page data
   const topGaining = games.length > 0 
     ? [...games].sort((a, b) => b.growth24h - a.growth24h)[0]
     : null;
@@ -124,7 +164,7 @@ export default function RisingPage() {
     },
     {
       key: "healthScore",
-      label: "Health Score",
+      label: "Rating",
       sortable: true,
       filterable: true,
       isNumeric: true,
@@ -132,16 +172,17 @@ export default function RisingPage() {
       sortValue: (game) => game.healthScore,
       render: (game) => (
         <span className={`inline-flex items-center px-sm py-xs rounded text-xs font-mono font-bold ${
-          game.healthScore >= 95 
-            ? "bg-emerald-500/10 text-emerald-400" 
+          game.healthScore >= 95
+            ? "bg-emerald-500/10 text-emerald-400"
             : game.healthScore >= 90
             ? "bg-primary/10 text-primary"
             : "bg-amber-500/10 text-amber-400"
         }`}>
-          {game.healthScore}/100
+          {Math.round(game.healthScore)}%
         </span>
       ),
     },
+
   ];
 
   const handleRowClick = (game: RisingStarGame) => {
@@ -175,7 +216,7 @@ export default function RisingPage() {
             </span>
             <input
               type="text"
-              placeholder="Search by game or creator..."
+              placeholder="Search by game name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-xl pr-md py-sm rounded-lg bg-surface-container/60 hover:bg-surface-container focus:bg-surface-container border border-outline-variant focus:border-primary focus:outline-none text-body-sm transition-all placeholder:text-on-surface-variant/60"
@@ -210,9 +251,9 @@ export default function RisingPage() {
           </button>
         </div>
 
-        {/* Interactive Data Table with Sorting */}
+        {/* Interactive Data Table with Sorting + Pagination */}
         <SortableTable
-          data={filteredGames}
+          data={games}
           columns={columns}
           defaultSortKey="growth24h"
           defaultSortDir="desc"
@@ -221,6 +262,11 @@ export default function RisingPage() {
           loadingMessage="Loading rising stars..."
           emptyMessage={searchTerm ? `No rising stars found matching "${searchTerm}"` : "No games found."}
           rowKey={(game) => game.universeId}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
         />
       </div>
     </main>

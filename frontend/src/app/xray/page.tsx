@@ -4,8 +4,10 @@ import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Search, Activity, Users, DollarSign, Heart, ArrowLeft, History, Trash2,
-  ExternalLink, Share2, FolderPlus, Star, Shield, Gamepad2, BarChart3, Check
+  ExternalLink, Share2, FolderPlus, Star, Shield, Gamepad2, BarChart3, Check,
+  Plus, X, FolderOpen
 } from "lucide-react";
+import AuthModal from "@/components/AuthModal";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import GameThumbnail from "@/components/GameThumbnail";
 import SortableTable, { ColumnDef } from "@/components/SortableTable";
@@ -99,13 +101,52 @@ function XRayDashboard() {
   const [errorMsg, setErrorMsg] = useState("");
   const [allGames, setAllGames] = useState<ListGame[]>([]);
   const [allGamesLoading, setAllGamesLoading] = useState(true);
+  const [topGamesPage, setTopGamesPage] = useState(0);
+  const [topGamesTotalPages, setTopGamesTotalPages] = useState(1);
+  const [topGamesTotalElements, setTopGamesTotalElements] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [comparisonPeriod, setComparisonPeriod] = useState<number | null>(null);
+  const [timeframe, setTimeframe] = useState<number | null>(30);
   const [activeBreakdownTab, setActiveBreakdownTab] = useState<"ccu" | "visits" | "playtime" | "revenue">("visits");
 
-  // Load search history from LocalStorage
+  // Auth and Collection states
+  const [user, setUser] = useState<any | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [addToCollectionModalOpen, setAddToCollectionModalOpen] = useState(false);
+  const [newColName, setNewColName] = useState("");
+  const [userCollections, setUserCollections] = useState<any[]>([]);
+
+  // Load search history and handle auth changes
   useEffect(() => {
     setMounted(true);
+
+    const handleAuthChange = () => {
+      const stored = localStorage.getItem("user");
+      let currentUser = null;
+      if (stored) {
+        try {
+          currentUser = JSON.parse(stored);
+          setUser(currentUser);
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+
+      const userKey = currentUser && currentUser.email ? currentUser.email : "guest";
+      const storageKey = `collections_${userKey}`;
+      try {
+        const collectionsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        setUserCollections(Object.values(collectionsObj));
+      } catch {
+        setUserCollections([]);
+      }
+    };
+
+    handleAuthChange();
+    window.addEventListener("auth-change", handleAuthChange);
+
     const savedHistory = localStorage.getItem("xray_search_history");
     if (savedHistory) {
       try {
@@ -126,15 +167,23 @@ function XRayDashboard() {
         console.error("Error parsing history:", e);
       }
     }
+
+    return () => {
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
   }, []);
 
-  // Fetch all games for the top games table
+  // Fetch all games for the top games table (server-side paginated)
   useEffect(() => {
-    fetch("/api/universes")
+    setAllGamesLoading(true);
+    fetch(`/api/universes?page=${topGamesPage}&size=20&sort=playing&dir=desc`)
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data)) {
-          setAllGames(data);
+        const gamesArray = Array.isArray(data) ? data : (data && Array.isArray(data.content) ? data.content : []);
+        setAllGames(gamesArray);
+        if (data && typeof data.totalPages === 'number') {
+          setTopGamesTotalPages(data.totalPages);
+          setTopGamesTotalElements(data.totalElements || 0);
         }
         setAllGamesLoading(false);
       })
@@ -142,7 +191,7 @@ function XRayDashboard() {
         console.error("Error fetching games list:", err);
         setAllGamesLoading(false);
       });
-  }, []);
+  }, [topGamesPage]);
 
   // Fetch details for active universe ID
   useEffect(() => {
@@ -224,25 +273,81 @@ function XRayDashboard() {
   // Add to collection handler
   const handleAddToCollection = useCallback(() => {
     if (!activeGame) return;
-    const userKey = "guest"; // Would use supabase user email if logged in
+
+    // Check if user is logged in
+    if (!user) {
+      setAuthModalOpen(true);
+      return;
+    }
+
+    // If logged in, open the select-collection modal
+    // First reload collections in case they changed
+    const userKey = user.email ? user.email : "guest";
     const storageKey = `collections_${userKey}`;
-    const collections = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    
-    // Default collection
-    if (!collections["My Games"]) {
-      collections["My Games"] = { name: "My Games", games: [], updatedAt: Date.now() };
+    try {
+      const collectionsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      setUserCollections(Object.values(collectionsObj));
+    } catch {}
+
+    setAddToCollectionModalOpen(true);
+  }, [activeGame, user]);
+
+  // Actual add helper used by the modal
+  const performAddToCollection = useCallback((collectionName: string) => {
+    if (!activeGame || !user) return;
+    const userKey = user.email ? user.email : "guest";
+    const storageKey = `collections_${userKey}`;
+
+    try {
+      const collections = JSON.parse(localStorage.getItem(storageKey) || "{}");
+
+      if (!collections[collectionName]) {
+        collections[collectionName] = { name: collectionName, games: [], updatedAt: Date.now() };
+      }
+
+      const targetCol = collections[collectionName];
+      const gameIdStr = String(activeGame.universeId);
+      const gameIds = Array.isArray(targetCol.games) ? targetCol.games.map(String) : [];
+
+      if (!gameIds.includes(gameIdStr)) {
+        if (gameIds.length >= 3) {
+          setToastMessage(`Collection "${collectionName}" is full (max 3 games)`);
+          return;
+        }
+        targetCol.games = [...gameIds, gameIdStr];
+        targetCol.updatedAt = Date.now();
+        localStorage.setItem(storageKey, JSON.stringify(collections));
+        setUserCollections(Object.values(collections));
+
+        // Sync with backend user radar if logged in
+        if (user && user.token) {
+          fetch("/api/radar", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${user.token}`
+            },
+            body: JSON.stringify({ universeId: Number(activeGame.universeId) })
+          }).catch(err => console.error("Error syncing to backend radar:", err));
+        }
+
+        setToastMessage(`Added "${activeGame.name}" to "${collectionName}"`);
+        setAddToCollectionModalOpen(false);
+      } else {
+        setToastMessage(`"${activeGame.name}" is already in "${collectionName}"`);
+      }
+    } catch (e) {
+      console.error(e);
+      setToastMessage("Failed to add to collection");
     }
-    
-    const defaultCollection = collections["My Games"];
-    if (!defaultCollection.games.includes(activeGame.universeId)) {
-      defaultCollection.games.push(activeGame.universeId);
-      defaultCollection.updatedAt = Date.now();
-      localStorage.setItem(storageKey, JSON.stringify(collections));
-      setToastMessage(`Added "${activeGame.name}" to "My Games" collection`);
-    } else {
-      setToastMessage(`"${activeGame.name}" is already in "My Games"`);
-    }
-  }, [activeGame]);
+  }, [activeGame, user]);
+
+  const handleCreateAndAddCollection = useCallback(() => {
+    const trimmed = newColName.trim();
+    if (!trimmed) return;
+    performAddToCollection(trimmed);
+    setNewColName("");
+  }, [newColName, performAddToCollection]);
 
   // Generate comparison data for charts (deterministic based on index)
   const getComparisonData = (data: any[], dataKey: string) => {
@@ -303,7 +408,7 @@ function XRayDashboard() {
     },
     {
       key: "healthScore",
-      label: "Health",
+      label: "Rating",
       sortable: true,
       filterable: true,
       isNumeric: true,
@@ -315,16 +420,20 @@ function XRayDashboard() {
           : game.healthScore >= 90 ? "bg-primary/10 text-primary"
           : "bg-amber-500/10 text-amber-400"
         }`}>
-          {game.healthScore}
+          {Math.round(game.healthScore)}%
         </span>
       ),
     },
   ];
 
-  // Prepare chart data with comparison
-  const consolidatedChartData = comparisonPeriod
-    ? getComparisonData(activeGame?.dailyMetrics || [], activeBreakdownTab)
-    : activeGame?.dailyMetrics || [];
+  // Prepare chart data with comparison and timeframe
+  const consolidatedChartData = (() => {
+    let data = comparisonPeriod
+      ? getComparisonData(activeGame?.dailyMetrics || [], activeBreakdownTab)
+      : activeGame?.dailyMetrics || [];
+    if (timeframe) data = data.slice(-timeframe);
+    return data;
+  })();
 
   // Find game rank among all games
   const gameRank = activeGame
@@ -448,7 +557,7 @@ function XRayDashboard() {
               <div className="flex items-center gap-xs px-sm py-xs rounded-md bg-surface-container/60 border border-outline-variant/30">
                 <BarChart3 className="w-3.5 h-3.5 text-on-surface-variant" />
                 <span className="text-xs font-semibold text-on-surface-variant">
-                  Rating: {activeGame.healthScore}%
+                  Rating: {Math.round(activeGame.healthScore)}%
                 </span>
               </div>
               <div className={`flex items-center gap-xs px-sm py-xs rounded-md border ${
@@ -468,7 +577,7 @@ function XRayDashboard() {
                   : activeGame.healthScore >= 90 ? "text-primary"
                   : "text-amber-400"
                 }`}>
-                  Health: {activeGame.healthScore}/100
+                  Rating: {Math.round(activeGame.healthScore)}%
                 </span>
               </div>
             </div>
@@ -578,32 +687,55 @@ function XRayDashboard() {
                 </div>
               </CardHeader>
               <CardContent className="pt-md">
-                {/* Comparison selector row */}
-                <div className="flex flex-wrap items-center gap-sm mb-md pb-sm border-b border-outline-variant/10">
-                  <span className="text-xs text-on-surface-variant font-medium">Compare with:</span>
-                  <button
-                    onClick={() => setComparisonPeriod(null)}
-                    className={`px-sm py-xs rounded-md text-xs font-semibold transition-all ${
-                      comparisonPeriod === null
-                        ? "bg-primary/15 text-primary border border-primary/30"
-                        : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
-                    }`}
-                  >
-                    None
-                  </button>
-                  {COMPARISON_PERIODS.map((period) => (
-                    <button
-                      key={period.value}
-                      onClick={() => setComparisonPeriod(period.value)}
-                      className={`px-sm py-xs rounded-md text-xs font-semibold transition-all ${
-                        comparisonPeriod === period.value
-                          ? "bg-primary/15 text-primary border border-primary/30"
-                          : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
-                      }`}
-                    >
-                      {period.label}
-                    </button>
-                  ))}
+                {/* Timeframe + Comparison selector row */}
+                <div className="flex flex-wrap items-center justify-between gap-sm mb-md pb-sm border-b border-outline-variant/10">
+                  {/* Timeframe */}
+                  <div className="flex flex-wrap items-center gap-xs">
+                    <span className="text-xs text-on-surface-variant font-medium mr-xs">Timeframe:</span>
+                    {[
+                      { label: "7d", value: 7 },
+                      { label: "30d", value: 30 },
+                      { label: "90d", value: 90 },
+                      { label: "All", value: null },
+                    ].map((tf) => (
+                      <button
+                        key={tf.label}
+                        onClick={() => { setTimeframe(tf.value); setComparisonPeriod(null); }}
+                        className={`px-sm py-xs rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                          timeframe === tf.value
+                            ? "bg-primary/15 text-primary border border-primary/30"
+                            : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
+                        }`}
+                      >
+                        {tf.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Compare with — only shown when a specific timeframe is selected */}
+                  {timeframe !== null && (() => {
+                    const matchMap: Record<number, { label: string; value: number }> = {
+                      7:  { label: "vs. Previous Week",  value: 7  },
+                      30: { label: "vs. Previous Month", value: 30 },
+                      90: { label: "vs. Previous 3 Months", value: 90 },
+                    };
+                    const option = matchMap[timeframe];
+                    if (!option) return null;
+                    return (
+                      <div className="flex items-center gap-xs">
+                        <button
+                          onClick={() => setComparisonPeriod(comparisonPeriod === option.value ? null : option.value)}
+                          className={`px-sm py-xs rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                            comparisonPeriod === option.value
+                              ? "bg-primary/15 text-primary border border-primary/30"
+                              : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
+                          }`}
+                        >
+                          {comparisonPeriod === option.value ? `✓ ${option.label}` : option.label}
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="h-80">
@@ -648,13 +780,14 @@ function XRayDashboard() {
                             formatter={(val) => [formatNumber(val as number), "Avg CCU"]}
                           />
                           {comparisonPeriod && <Legend />}
-                          <Line
+                        <Line
                             type="monotone"
                             dataKey="ccu"
                             name="Current Avg CCU"
                             stroke="#85cfff"
                             strokeWidth={2.5}
                             dot={{ r: 4 }}
+                            connectNulls
                           />
                           {comparisonPeriod && (
                             <Line
@@ -680,13 +813,14 @@ function XRayDashboard() {
                             formatter={(val) => [`${val} mins`, "Avg Session"]}
                           />
                           {comparisonPeriod && <Legend />}
-                          <Line
+                        <Line
                             type="monotone"
                             dataKey="playtime"
                             name="Current Avg Session"
                             stroke="#34ff8d"
                             strokeWidth={2.5}
                             dot={{ r: 4 }}
+                            connectNulls
                           />
                           {comparisonPeriod && (
                             <Line
@@ -712,13 +846,14 @@ function XRayDashboard() {
                             formatter={(val) => [formatCurrency(val as number), "Est. Revenue"]}
                           />
                           {comparisonPeriod && <Legend />}
-                          <Line
+                        <Line
                             type="monotone"
                             dataKey="revenue"
                             name="Current Daily Revenue"
                             stroke="#fdbc13"
                             strokeWidth={2.5}
                             dot={{ r: 4 }}
+                            connectNulls
                           />
                           {comparisonPeriod && (
                             <Line
@@ -797,11 +932,142 @@ function XRayDashboard() {
                 loadingMessage="Loading top games..."
                 emptyMessage="No games found in database."
                 rowKey={(game) => game.universeId}
+                currentPage={topGamesPage}
+                totalPages={topGamesTotalPages}
+                totalElements={topGamesTotalElements}
+                pageSize={20}
+                onPageChange={(p) => {
+                  setTopGamesPage(p);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
               />
             </div>
           </div>
         )}
       </div>
+
+      {/* Add To Collection Modal */}
+      {addToCollectionModalOpen && activeGame && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            width: '100vw', 
+            height: '100vh', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            zIndex: 9999 
+          }}
+        >
+          {/* Backdrop */}
+          <div 
+            onClick={() => setAddToCollectionModalOpen(false)}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(16, 19, 26, 0.8)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              transition: 'opacity 0.3s ease',
+              cursor: 'pointer'
+            }}
+          />
+
+          {/* Modal Container */}
+          <div 
+            className="relative overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low p-8 shadow-2xl z-10 transition-all duration-300 transform scale-100 animate-fade-in"
+            style={{
+              width: 'calc(100% - 2rem)',
+              maxWidth: '448px', // Equivalent to max-w-md
+              boxSizing: 'border-box'
+            }}
+          >
+            {/* Close Button */}
+            <button 
+              onClick={() => setAddToCollectionModalOpen(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-foreground hover:bg-surface-container-high p-1.5 rounded-full transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Header */}
+            <div className="flex flex-col items-center mb-6 text-center">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-container to-inverse-primary border border-white/10 flex items-center justify-center shadow-lg mb-3">
+                <FolderOpen className="text-white w-5 h-5" />
+              </div>
+              <h2 className="text-headline-md font-bold text-foreground">
+                Add to Collection
+              </h2>
+              <p className="text-body-sm text-on-surface-variant mt-1">
+                Select a collection to add <span className="text-primary font-semibold">{activeGame.name}</span>
+              </p>
+            </div>
+
+            {/* Collections List */}
+            <div className="space-y-sm max-h-48 overflow-y-auto mb-6 pr-1">
+              {userCollections.length > 0 ? (
+                userCollections.map((col) => {
+                  const alreadyContains = Array.isArray(col.games) && col.games.map(String).includes(String(activeGame.universeId));
+                  return (
+                    <button
+                      key={col.name}
+                      onClick={() => !alreadyContains && performAddToCollection(col.name)}
+                      disabled={alreadyContains}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-body-sm font-semibold transition-all ${
+                        alreadyContains
+                          ? "bg-surface-container/20 border-outline-variant/30 text-on-surface-variant/40 cursor-not-allowed"
+                          : "bg-surface-container hover:bg-surface-container-high border-outline-variant/50 text-foreground cursor-pointer"
+                      }`}
+                    >
+                      <span className="truncate">{col.name}</span>
+                      <span className="text-xs font-mono font-medium text-on-surface-variant">
+                        {alreadyContains ? "Already added" : `${col.games.length}/3 games`}
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="text-center py-md text-body-sm text-on-surface-variant bg-surface-container/30 border border-outline-variant/20 rounded-lg">
+                  No collections yet. Create one below!
+                </div>
+              )}
+            </div>
+
+            {/* Create new collection section */}
+            <div className="border-t border-outline-variant/30 pt-4 space-y-3">
+              <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Create New Collection
+              </label>
+              <div className="flex gap-sm">
+                <input
+                  type="text"
+                  placeholder="Collection name..."
+                  value={newColName}
+                  onChange={(e) => setNewColName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateAndAddCollection()}
+                  className="flex-1 px-md py-sm rounded-lg bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-body-sm transition-all"
+                />
+                <button
+                  onClick={handleCreateAndAddCollection}
+                  disabled={!newColName.trim()}
+                  className="px-md py-sm rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary-container transition-all disabled:opacity-40 disabled:hover:bg-primary flex items-center justify-center gap-xs cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auth Modal for Login check */}
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
       {/* Toast Notification */}
       {toastMessage && (

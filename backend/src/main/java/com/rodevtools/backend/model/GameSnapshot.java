@@ -2,16 +2,17 @@ package com.rodevtools.backend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "game_snapshots")
 @Data
-@RequiredArgsConstructor
-
-
+@NoArgsConstructor
 public class GameSnapshot {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,7 +26,14 @@ public class GameSnapshot {
 
     private Long playing;
 
-    private LocalDateTime snapshotTimestamp;
+    @CreatedDate
+    @Column(name = "timestamp", nullable = false, updatable = false)
+    private Instant snapshotTimestamp;
 
 
+    public GameSnapshot(Game game, Long playing, Long visits) {
+        this.game = game;
+        this.playing = playing;
+        this.visits = visits;
+    }
 }
