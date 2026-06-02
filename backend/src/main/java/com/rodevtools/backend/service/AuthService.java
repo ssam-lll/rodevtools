@@ -27,7 +27,6 @@ public class AuthService {
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPasswordHash(hashedPassword);
-        // Salt is embedded within BCrypt hash — separate salt field no longer needed
         user.setSalt("BCRYPT");
         user.setRole("USER");
 

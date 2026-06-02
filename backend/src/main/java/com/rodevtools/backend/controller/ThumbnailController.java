@@ -23,19 +23,16 @@ public class ThumbnailController {
             @RequestParam("universeIds") String universeIds,
             @RequestParam(value = "size", defaultValue = "150x150") String size) {
 
-        // SSRF protection: validate universeIds are only comma-separated numbers
         if (!universeIds.matches("^[0-9]+(,[0-9]+)*$")) {
             return ResponseEntity.badRequest()
                 .body("{\"error\": \"Invalid universeIds format. Only comma-separated numbers allowed.\"}");
         }
 
-        // Validate size against whitelist
         if (!ALLOWED_SIZES.contains(size)) {
             return ResponseEntity.badRequest()
                 .body("{\"error\": \"Invalid size. Allowed values: " + ALLOWED_SIZES + "\"}");
         }
 
-        // Limit number of IDs to prevent abuse
         String[] ids = universeIds.split(",");
         if (ids.length > 100) {
             return ResponseEntity.badRequest()

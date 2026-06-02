@@ -26,11 +26,6 @@ public class GameController {
     private final GameService gameService;
     private final GameAnalyticsService gameAnalyticsService;
 
-    /**
-     * GET /api/universes?id=123       → X-Ray details for a single game
-     * GET /api/universes              → Paginated list of all games
-     * GET /api/universes?page=0&size=20&sort=playing&dir=desc&search=simulator&category=Obby
-     */
     @GetMapping
     public ResponseEntity<?> getUniverses(
             @RequestParam(value = "id", required = false) Long id,
@@ -41,7 +36,6 @@ public class GameController {
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "category", required = false) String category) {
 
-        // Single game X-Ray lookup
         if (id != null) {
             return gameService.findById(id)
                     .map(game -> ResponseEntity.ok(gameService.getXRayDetails(game)))
@@ -54,21 +48,17 @@ public class GameController {
                     });
         }
 
-        // Cap page size to prevent abuse
         if (size > 100) size = 100;
         if (size < 1) size = 1;
 
-        // Build sort
         Sort sort = Sort.by(
             "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC,
             mapSortField(sortField)
         );
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Fetch paginated data
         Page<Game> gamePage = gameService.findAllPaginated(pageable, search, category);
 
-        // Map to DTO
         Page<GameResponseDto> responsePage = gamePage.map(game -> {
             double monthlyRevenue = game.getPlaying() != null ? game.getPlaying() * 4.5 * 30 : 0.0;
             int playtime = 15 + (int)(game.getUniverseId() % 15);
@@ -105,7 +95,6 @@ public class GameController {
         LocalDateTime since = LocalDateTime.now().minusHours(hours);
         List<RisingStarProjection> allStars = gameAnalyticsService.getRisingStars(minPlaying, maxPlaying, since);
 
-        // Map to RisingStarResponseDto and filter by search
         List<RisingStarResponseDto> dtos = allStars.stream().map(proj -> {
             long currentCcu = proj.getCurrentCcu() != null ? proj.getCurrentCcu() : 0L;
             double growthRate = proj.getGrowthRate() != null ? Math.round(proj.getGrowthRate() * 100.0) / 100.0 : 0.0;
@@ -122,11 +111,10 @@ public class GameController {
                     healthScore
             );
         })
-        .filter(dto -> search == null || search.isBlank() || 
+        .filter(dto -> search == null || search.isBlank() ||
                        (dto.getName() != null && dto.getName().toLowerCase().contains(search.toLowerCase().trim())))
         .toList();
 
-        // Sort in-memory
         boolean asc = "asc".equalsIgnoreCase(sortDir);
         List<RisingStarResponseDto> sortedDtos = new java.util.ArrayList<>(dtos);
         sortedDtos.sort((a, b) -> {
@@ -151,7 +139,6 @@ public class GameController {
             return asc ? cmp : -cmp;
         });
 
-        // Paginate in-memory
         int start = Math.min(page * size, sortedDtos.size());
         int end = Math.min(start + size, sortedDtos.size());
         List<RisingStarResponseDto> pageContent = sortedDtos.subList(start, end);
@@ -162,9 +149,6 @@ public class GameController {
         return ResponseEntity.ok(responsePage);
     }
 
-    /**
-     * Maps frontend-friendly sort field names to entity field names.
-     */
     private String mapSortField(String field) {
         return switch (field) {
             case "name" -> "gameName";

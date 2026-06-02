@@ -28,9 +28,6 @@ public class WebConfig implements WebMvcConfigurer {
         return new RestTemplate();
     }
 
-    /**
-     * CORS configuration source used by both Spring MVC and Spring Security.
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();

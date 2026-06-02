@@ -38,48 +38,36 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Enable CORS — auto-discovers the CorsConfigurationSource bean from WebConfig
             .cors(org.springframework.security.config.Customizer.withDefaults())
 
-            // Disable CSRF — stateless JWT API, no cookies for auth
             .csrf(AbstractHttpConfigurer::disable)
 
-            // Stateless session — no server-side session
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
-            // Security headers
             .headers(headers -> headers
-                .contentTypeOptions(contentType -> {}) // X-Content-Type-Options: nosniff
-                .frameOptions(frame -> frame.deny())   // X-Frame-Options: DENY
+                .contentTypeOptions(contentType -> {})
+                .frameOptions(frame -> frame.deny())
                 .referrerPolicy(referrer ->
                     referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
                 )
             )
 
-            // Authorization rules
             .authorizeHttpRequests(auth -> auth
-                // Public authentication endpoints
                 .requestMatchers("/auth/**").permitAll()
 
-                // Public thumbnail proxy
                 .requestMatchers("/api/thumbnails", "/api/thumbnails/**").permitAll()
 
-                // Public GET for game listing
                 .requestMatchers(HttpMethod.GET, "/api/universes", "/api/universes/**").permitAll()
 
-                // External API (handled by ApiKeyInterceptor)
                 .requestMatchers("/api/external/**").permitAll()
 
-                // Everything else requires authentication
                 .anyRequest().authenticated()
             )
 
-            // Rate limit filter runs first (reject abusive IPs before any auth logic)
             .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
 
-            // Add JWT filter before Spring Security's username/password filter
             .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

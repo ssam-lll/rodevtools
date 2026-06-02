@@ -28,12 +28,10 @@ public class ApikeyInterceptor implements HandlerInterceptor {
         String method = request.getMethod();
         String path = request.getServletPath();
 
-        // 1. Bypass CORS Preflight (OPTIONS)
         if ("OPTIONS".equalsIgnoreCase(method)) {
             return true;
         }
 
-        // 2. Public routes excluded
         if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register")) {
             return true;
         }
@@ -47,7 +45,6 @@ public class ApikeyInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 3. Bearer Token authentication
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
@@ -55,7 +52,6 @@ public class ApikeyInterceptor implements HandlerInterceptor {
                 if (tokenService.isTokenValid(token)) {
                     Claims claims = tokenService.validateAndGetClaims(token);
 
-                    // Inject context for controllers
                     request.setAttribute("currentUser", claims);
                     request.setAttribute("userId", claims.getSubject());
 
@@ -69,11 +65,9 @@ public class ApikeyInterceptor implements HandlerInterceptor {
                     return true;
                 }
             } catch (JwtException | IllegalArgumentException e) {
-                // Invalid token — fall through to API Key check
             }
         }
 
-        // 4. Alternative authentication (API Key) — timing-safe comparison
         String apiKey = request.getHeader("X-API-Key");
         if (apiKey == null) {
             apiKey = request.getHeader("x-api-key");
@@ -86,16 +80,12 @@ public class ApikeyInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 5. Access Denied
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write("{\"error\": \"Acceso denegado. Token o API Key invalida o faltante\"}");
         return false;
     }
 
-    /**
-     * Constant-time string comparison to prevent timing attacks.
-     */
     private boolean timingSafeEquals(String a, String b) {
         return MessageDigest.isEqual(
             a.getBytes(StandardCharsets.UTF_8),
