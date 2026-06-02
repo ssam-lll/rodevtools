@@ -34,7 +34,7 @@ public class TokenService {
         Date expiration = new Date(now.getTime() + expirationTimeInMs);
 
         return Jwts.builder()
-                .id(UUID.randomUUID().toString()) // jti — unique token identifier for revocation
+                .id(UUID.randomUUID().toString())
                 .subject(userId.toString())
                 .claims(Map.of(
                         "email", email,

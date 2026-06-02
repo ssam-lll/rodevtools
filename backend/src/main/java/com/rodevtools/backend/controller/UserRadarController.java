@@ -67,7 +67,6 @@ public class UserRadarController {
         boolean alreadyTracking = userRadarRepository.findByUserId(userId).stream().anyMatch(r -> r.getGame().getUniverseId().equals(universeId));
 
         if (alreadyTracking){
-            // Silently return OK - game is already tracked (can be in multiple local collections)
             return ResponseEntity.ok("Game already tracked in radar");
         }
 

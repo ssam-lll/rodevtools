@@ -19,7 +19,6 @@ public interface GameRepository extends JpaRepository<Game, Long> {
     @Query("SELECT g.universeId FROM Game g")
     java.util.Set<Long> findAllUniverseIds();
 
-    // Paginated query methods
     Page<Game> findByGameNameContainingIgnoreCase(String name, Pageable pageable);
 
     Page<Game> findByCategory(String category, Pageable pageable);
