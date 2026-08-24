@@ -25,7 +25,10 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(3000);
+        factory.setReadTimeout(5000);
+        return new RestTemplate(factory);
     }
 
     @Bean

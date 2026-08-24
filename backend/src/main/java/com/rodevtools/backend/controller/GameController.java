@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -25,6 +26,13 @@ public class GameController {
 
     private final GameService gameService;
     private final GameAnalyticsService gameAnalyticsService;
+    private final com.rodevtools.backend.service.SnapshotConsolidationService snapshotConsolidationService;
+
+    @PostMapping("/snapshots/consolidate")
+    public ResponseEntity<?> consolidateSnapshots(
+            @RequestParam(value = "days", defaultValue = "14") int days) {
+        return ResponseEntity.ok(snapshotConsolidationService.consolidateAndPurge(days));
+    }
 
     @GetMapping
     public ResponseEntity<?> getUniverses(
@@ -60,8 +68,8 @@ public class GameController {
         Page<Game> gamePage = gameService.findAllPaginated(pageable, search, category);
 
         Page<GameResponseDto> responsePage = gamePage.map(game -> {
-            double monthlyRevenue = game.getPlaying() != null ? game.getPlaying() * 4.5 * 30 : 0.0;
-            int playtime = 15 + (int)(game.getUniverseId() % 15);
+            double monthlyRevenue = gameService.calculateMonthlyRevenue(game.getPlaying());
+            int playtime = gameService.calculateEstimatedPlaytime(game.getPlaying(), game.getVisits());
             return new GameResponseDto(
                     game.getUniverseId(),
                     game.getGameName(),
@@ -92,13 +100,22 @@ public class GameController {
         if (size > 100) size = 100;
         if (size < 1) size = 1;
 
-        LocalDateTime since = LocalDateTime.now().minusHours(hours);
-        List<RisingStarProjection> allStars = gameAnalyticsService.getRisingStars(minPlaying, maxPlaying, since);
+        Instant since = Instant.now().minus(hours, java.time.temporal.ChronoUnit.HOURS);
 
-        List<RisingStarResponseDto> dtos = allStars.stream().map(proj -> {
+        Sort sort = Sort.by(
+            "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC,
+            mapRisingStarSortField(sortField)
+        );
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<RisingStarProjection> projectionPage = gameAnalyticsService.getRisingStars(
+                minPlaying, maxPlaying, since, search, pageable
+        );
+
+        Page<RisingStarResponseDto> responsePage = projectionPage.map(proj -> {
             long currentCcu = proj.getCurrentCcu() != null ? proj.getCurrentCcu() : 0L;
             double growthRate = proj.getGrowthRate() != null ? Math.round(proj.getGrowthRate() * 100.0) / 100.0 : 0.0;
-            double monthlyRevenueEst = currentCcu * 4.5 * 30;
+            double monthlyRevenueEst = gameService.calculateMonthlyRevenue(currentCcu);
             double healthScore = proj.getHealthScore() != null ? Math.round(proj.getHealthScore() * 10.0) / 10.0 : 0.0;
 
             return new RisingStarResponseDto(
@@ -110,41 +127,7 @@ public class GameController {
                     monthlyRevenueEst,
                     healthScore
             );
-        })
-        .filter(dto -> search == null || search.isBlank() ||
-                       (dto.getName() != null && dto.getName().toLowerCase().contains(search.toLowerCase().trim())))
-        .toList();
-
-        boolean asc = "asc".equalsIgnoreCase(sortDir);
-        List<RisingStarResponseDto> sortedDtos = new java.util.ArrayList<>(dtos);
-        sortedDtos.sort((a, b) -> {
-            int cmp = 0;
-            switch (sortField) {
-                case "name" -> {
-                    String nameA = a.getName() != null ? a.getName() : "";
-                    String nameB = b.getName() != null ? b.getName() : "";
-                    cmp = nameA.compareToIgnoreCase(nameB);
-                }
-                case "creator" -> {
-                    String creatorA = a.getCreator() != null ? a.getCreator() : "";
-                    String creatorB = b.getCreator() != null ? b.getCreator() : "";
-                    cmp = creatorA.compareToIgnoreCase(creatorB);
-                }
-                case "activePlayers", "playing" -> cmp = Long.compare(a.getActivePlayers(), b.getActivePlayers());
-                case "growth24h", "growthRate" -> cmp = Double.compare(a.getGrowth24h(), b.getGrowth24h());
-                case "monthlyRevenueEst" -> cmp = Double.compare(a.getMonthlyRevenueEst(), b.getMonthlyRevenueEst());
-                case "healthScore" -> cmp = Double.compare(a.getHealthScore(), b.getHealthScore());
-                default -> cmp = Double.compare(a.getGrowth24h(), b.getGrowth24h());
-            }
-            return asc ? cmp : -cmp;
         });
-
-        int start = Math.min(page * size, sortedDtos.size());
-        int end = Math.min(start + size, sortedDtos.size());
-        List<RisingStarResponseDto> pageContent = sortedDtos.subList(start, end);
-
-        Pageable pageable = PageRequest.of(page, size);
-        Page<RisingStarResponseDto> responsePage = new PageImpl<>(pageContent, pageable, sortedDtos.size());
 
         return ResponseEntity.ok(responsePage);
     }
@@ -158,6 +141,17 @@ public class GameController {
             case "healthScore", "rating" -> "rating";
             case "category" -> "category";
             default -> "playing";
+        };
+    }
+
+    private String mapRisingStarSortField(String field) {
+        return switch (field) {
+            case "name" -> "name";
+            case "creator", "creatorName" -> "creatorName";
+            case "activePlayers", "playing", "currentCcu" -> "currentCcu";
+            case "growth24h", "growthRate" -> "growthRate";
+            case "healthScore", "rating" -> "healthScore";
+            default -> "growthRate";
         };
     }
 }
