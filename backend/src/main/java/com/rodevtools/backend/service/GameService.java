@@ -78,16 +78,22 @@ public class GameService {
 
         List<XRayDetailsDto.DailyMetricDto> metrics = new ArrayList<>();
         Long previousMaxVisits = null;
+        java.time.LocalDate previousDate = null;
         int avgPlaytime = calculateEstimatedPlaytime(game.getPlaying(), game.getVisits());
 
         for (DailyAnalyticsProjection dayPoint : dailyData) {
             long dailyVisits = 0;
             if (previousMaxVisits != null) {
-                dailyVisits = Math.max(0, dayPoint.getMaxVisits() - previousMaxVisits);
+                long delta = Math.max(0, dayPoint.getMaxVisits() - previousMaxVisits);
+                long daysGap = (previousDate != null)
+                        ? Math.max(1, java.time.temporal.ChronoUnit.DAYS.between(previousDate, dayPoint.getDate()))
+                        : 1;
+                dailyVisits = delta / daysGap;
             } else {
                 dailyVisits = 0;
             }
             previousMaxVisits = dayPoint.getMaxVisits();
+            previousDate = dayPoint.getDate();
 
             String formattedDay = dayPoint.getDate().getMonthValue() + "-" + dayPoint.getDate().getDayOfMonth();
 
