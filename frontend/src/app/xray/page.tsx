@@ -72,7 +72,7 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 
   return (
     <div className="toast-container">
-      <div className="toast toast-success flex items-center gap-sm">
+      <div className="toast toast-success flex items-center gap-2">
         <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
         <span>{message}</span>
       </div>
@@ -287,7 +287,7 @@ function XRayDashboard() {
     try {
       const collectionsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
       setUserCollections(Object.values(collectionsObj));
-    } catch {}
+    } catch { }
 
     setAddToCollectionModalOpen(true);
   }, [activeGame, user]);
@@ -415,11 +415,10 @@ function XRayDashboard() {
       align: "center",
       sortValue: (game) => game.healthScore,
       render: (game) => (
-        <span className={`inline-flex items-center px-sm py-xs rounded text-xs font-mono font-bold ${
-          game.healthScore >= 95 ? "bg-emerald-500/10 text-emerald-400"
-          : game.healthScore >= 90 ? "bg-primary/10 text-primary"
-          : "bg-amber-500/10 text-amber-400"
-        }`}>
+        <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-mono font-bold ${game.healthScore >= 95 ? "bg-emerald-500/10 text-emerald-400"
+            : game.healthScore >= 90 ? "bg-primary/10 text-primary"
+              : "bg-amber-500/10 text-amber-400"
+          }`}>
           {Math.round(game.healthScore)}%
         </span>
       ),
@@ -441,29 +440,21 @@ function XRayDashboard() {
     : 0;
 
   return (
-    <main className="relative flex-1 bg-background text-foreground py-xl px-gutter overflow-hidden">
-      
-      {/* Background Radial Glow */}
-      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[150px] pointer-events-none" />
-
-      <div className="container-max z-10 relative">
+    <main className="relative flex-1 bg-background text-foreground p-6 md:p-8">
+      <div className="container-max z-10">
         {/* Header / Search Controls */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-md mb-xl border-b border-outline-variant/30 pb-lg">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-outline-variant/30 pb-6">
           <div>
-            <div className="flex items-center gap-xs text-primary mb-xs">
-              <Activity className="w-5 h-5" />
-              <span className="text-label-caps font-semibold">Diagnostic System</span>
-            </div>
-            <h1 className="text-headline-lg font-bold">Game X-Ray</h1>
-            <p className="text-body-md text-on-surface-variant mt-xs">
-              Examine technical performance, growth trends, and financial viability of Roblox titles.
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Game X-Ray</h1>
+            <p className="text-sm text-on-surface-variant mt-1">
+              Look up any Roblox game to view player history, visit trends, and estimated revenue.
             </p>
           </div>
 
-          <div className="flex flex-col gap-xs w-full md:w-auto">
-            {/* Search Input - more prominent */}
+          <div className="flex flex-col gap-1.5 w-full md:w-auto">
+            {/* Search Input - prominent */}
             <form onSubmit={handleSearchSubmit} className="relative flex-1 sm:w-96">
-              <span className="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <Search className="w-4 h-4 text-primary" />
               </span>
               <input
@@ -471,7 +462,7 @@ function XRayDashboard() {
                 placeholder="Enter a Universe ID (e.g., 292439477)"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-xl pr-md py-sm rounded-lg bg-surface-container/60 hover:bg-surface-container focus:bg-surface-container border border-primary/30 focus:border-primary focus:outline-none text-body-sm transition-all placeholder:text-on-surface-variant/50 animate-pulse-glow"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-container/60 hover:bg-surface-container focus:bg-surface-container border border-primary/30 focus:border-primary focus:outline-none text-sm transition-all placeholder:text-on-surface-variant/50"
               />
             </form>
             <span className="text-xs text-on-surface-variant/60 pl-1">
@@ -482,113 +473,104 @@ function XRayDashboard() {
 
         {/* X-Ray Dashboard View */}
         {loading ? (
-          <div className="flex justify-center py-xl">
+          <div className="flex justify-center py-16">
             <div className="text-center">
-              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-md"></div>
-              <span className="text-body-md text-on-surface-variant font-mono">Running technical X-ray...</span>
+              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <span className="text-sm text-on-surface-variant">Loading game data...</span>
             </div>
           </div>
         ) : errorMsg ? (
-          <div className="max-w-[500px] mx-auto py-xl text-center">
-            <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-md">
+          <div className="max-w-[500px] mx-auto py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
               <Activity className="w-8 h-8 text-red-400" />
             </div>
-            <h2 className="text-headline-md font-bold text-foreground">Technical Diagnostic Error</h2>
-            <p className="text-body-md text-on-surface-variant mt-xs mb-lg">{errorMsg}</p>
+            <h2 className="text-xl font-bold text-foreground">Game Not Found</h2>
+            <p className="text-sm text-on-surface-variant mt-2 mb-6">{errorMsg}</p>
             <button
               onClick={() => router.push("/xray")}
-              className="px-md py-sm rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant text-body-sm font-semibold transition-all"
+              className="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant text-sm font-semibold transition-all cursor-pointer"
             >
               Reset Search
             </button>
           </div>
         ) : activeGame ? (
-          <div className="space-y-lg animate-fade-in">
+          <div className="space-y-6 animate-fade-in">
             {/* Back Button and Game Info Header */}
-            <div className="flex flex-wrap items-center justify-between gap-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <button
                 onClick={() => router.push("/xray")}
-                className="inline-flex items-center gap-xs text-body-sm font-semibold text-primary hover:text-primary-container transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary-container transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Clear Analysis</span>
+                <span>Back to Overview</span>
               </button>
 
-              <div className="text-body-sm text-on-surface-variant font-mono">
+              <div className="text-sm text-on-surface-variant font-mono">
                 Universe ID: <span className="text-primary font-bold">{activeGame.universeId}</span>
               </div>
             </div>
 
             {/* Game Card Header with Thumbnail */}
-            <div className="p-lg rounded-xl bg-surface-container/30 border border-outline-variant/60 flex flex-col md:flex-row md:items-center justify-between gap-md">
-              <div className="flex items-center gap-md">
+            <div className="p-6 rounded-2xl bg-surface-container/30 border border-outline-variant/60 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
+              <div className="flex items-center gap-4">
                 <GameThumbnail universeId={activeGame.universeId} size="lg" />
                 <div>
-                  <h2 className="text-headline-md font-bold text-foreground">{activeGame.name}</h2>
-                  <p className="text-body-sm text-on-surface-variant mt-xs">
+                  <h2 className="text-xl font-bold text-foreground">{activeGame.name}</h2>
+                  <p className="text-sm text-on-surface-variant mt-1">
                     Developed by <span className="text-foreground font-semibold">{activeGame.creator}</span>
                   </p>
                 </div>
               </div>
-              <div className="flex gap-md items-center">
+              <div className="flex gap-6 items-center">
                 <div className="text-right">
-                  <div className="text-body-sm text-on-surface-variant">Cumulative Visits</div>
-                  <div className="text-headline-sm font-bold text-foreground font-mono">{formatNumber(activeGame.visits)}</div>
+                  <div className="text-xs text-on-surface-variant uppercase font-mono">Total Visits</div>
+                  <div className="text-2xl font-bold text-foreground font-mono">{formatNumber(activeGame.visits)}</div>
                 </div>
               </div>
             </div>
 
-            {/* Info Strip: Rank, Genre, Maturity, Rating, Health Score */}
-            <div className="flex flex-wrap items-center gap-sm p-sm rounded-lg bg-surface-container-lowest/60 border border-outline-variant/30">
+            {/* Info Strip: Rank, Genre, Maturity, Rating */}
+            <div className="flex flex-wrap items-center gap-2.5 p-3 rounded-xl bg-surface-container-lowest/60 border border-outline-variant/30">
               {gameRank > 0 && (
-                <div className="flex items-center gap-xs px-sm py-xs rounded-md bg-amber-500/10 border border-amber-500/20">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-500/10 border border-amber-500/20">
                   <Star className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-xs font-semibold text-amber-400">Rank #{gameRank}</span>
+                  <span className="text-xs font-semibold text-amber-400 font-mono">Rank #{gameRank}</span>
                 </div>
               )}
-              <div className="flex items-center gap-xs px-sm py-xs rounded-md bg-surface-container/60 border border-outline-variant/30">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-surface-container/60 border border-outline-variant/30">
                 <Gamepad2 className="w-3.5 h-3.5 text-on-surface-variant" />
                 <span className="text-xs font-semibold text-on-surface-variant">Adventure</span>
               </div>
-              <div className="flex items-center gap-xs px-sm py-xs rounded-md bg-surface-container/60 border border-outline-variant/30">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-surface-container/60 border border-outline-variant/30">
                 <Shield className="w-3.5 h-3.5 text-on-surface-variant" />
                 <span className="text-xs font-semibold text-on-surface-variant">All Ages</span>
               </div>
-              <div className="flex items-center gap-xs px-sm py-xs rounded-md bg-surface-container/60 border border-outline-variant/30">
-                <BarChart3 className="w-3.5 h-3.5 text-on-surface-variant" />
-                <span className="text-xs font-semibold text-on-surface-variant">
-                  Rating: {Math.round(activeGame.healthScore)}%
-                </span>
-              </div>
-              <div className={`flex items-center gap-xs px-sm py-xs rounded-md border ${
-                activeGame.healthScore >= 95
+              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-md border ${activeGame.healthScore >= 95
                   ? "bg-emerald-500/10 border-emerald-500/20"
                   : activeGame.healthScore >= 90
-                  ? "bg-primary/10 border-primary/20"
-                  : "bg-amber-500/10 border-amber-500/20"
-              }`}>
-                <Heart className={`w-3.5 h-3.5 ${
-                  activeGame.healthScore >= 95 ? "text-emerald-400"
-                  : activeGame.healthScore >= 90 ? "text-primary"
-                  : "text-amber-400"
-                }`} />
-                <span className={`text-xs font-bold font-mono ${
-                  activeGame.healthScore >= 95 ? "text-emerald-400"
-                  : activeGame.healthScore >= 90 ? "text-primary"
-                  : "text-amber-400"
+                    ? "bg-primary/10 border-primary/20"
+                    : "bg-amber-500/10 border-amber-500/20"
                 }`}>
+                <Heart className={`w-3.5 h-3.5 ${activeGame.healthScore >= 95 ? "text-emerald-400"
+                    : activeGame.healthScore >= 90 ? "text-primary"
+                      : "text-amber-400"
+                  }`} />
+                <span className={`text-xs font-bold font-mono ${activeGame.healthScore >= 95 ? "text-emerald-400"
+                    : activeGame.healthScore >= 90 ? "text-primary"
+                      : "text-amber-400"
+                  }`}>
                   Rating: {Math.round(activeGame.healthScore)}%
                 </span>
               </div>
             </div>
 
             {/* Action Buttons Row */}
-            <div className="flex flex-wrap items-center gap-sm">
+            <div className="flex flex-wrap items-center gap-3">
               <a
                 href={`https://www.roblox.com/games/${activeGame.universeId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary font-semibold text-body-sm hover:bg-primary-container transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary-container transition-all"
               >
                 <ExternalLink className="w-4 h-4" />
                 <span>Visit on Roblox</span>
@@ -596,7 +578,7 @@ function XRayDashboard() {
 
               <button
                 onClick={handleAddToCollection}
-                className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant text-body-sm font-semibold transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant text-xs font-semibold transition-all cursor-pointer"
               >
                 <FolderPlus className="w-4 h-4 text-primary" />
                 <span>Add to Collection</span>
@@ -604,64 +586,64 @@ function XRayDashboard() {
 
               <button
                 onClick={handleShare}
-                className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant text-body-sm font-semibold transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant text-xs font-semibold transition-all cursor-pointer"
               >
                 <Share2 className="w-4 h-4 text-on-surface-variant" />
                 <span>Share</span>
               </button>
             </div>
 
-            {/* 3 Stats Cards (Health Score moved to info strip) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+            {/* 3 Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-sm">
-                  <CardTitle className="text-body-sm text-on-surface-variant">Active CCU</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Active Players</CardTitle>
                   <Users className="w-4 h-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-headline-md font-bold font-mono">{formatNumber(activeGame.activePlayers)}</div>
-                  <p className="text-body-sm text-emerald-400 mt-xs font-semibold">Live Players</p>
+                  <div className="text-2xl font-bold font-mono text-foreground">{formatNumber(activeGame.activePlayers)}</div>
+                  <p className="text-xs text-emerald-400 mt-1 font-semibold">Current players online</p>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-sm">
-                  <CardTitle className="text-body-sm text-on-surface-variant">Est. Monthly Revenue</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Est. Monthly Revenue</CardTitle>
                   <DollarSign className="w-4 h-4 text-amber-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-headline-md font-bold font-mono text-amber-400">{formatCurrency(activeGame.monthlyRevenue)}</div>
-                  <p className="text-body-sm text-on-surface-variant mt-xs">Estimated gross USD</p>
+                  <div className="text-2xl font-bold font-mono text-amber-400">{formatCurrency(activeGame.monthlyRevenue)}</div>
+                  <p className="text-xs text-on-surface-variant mt-1">Estimated gross (USD)</p>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-sm">
-                  <CardTitle className="text-body-sm text-on-surface-variant">Average Playtime</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Avg. Session Time</CardTitle>
                   <Activity className="w-4 h-4 text-secondary-container" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-headline-md font-bold font-mono">{activeGame.playtime} min</div>
-                  <p className="text-body-sm text-on-surface-variant mt-xs">User engagement index</p>
+                  <div className="text-2xl font-bold font-mono text-foreground">{activeGame.playtime || 20} min</div>
+                  <p className="text-xs text-on-surface-variant mt-1">Average visit duration</p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Switcher performance chart card */}
             <Card>
-              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-sm">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-outline-variant/30 pb-4">
                 <div>
-                  <CardTitle className="text-body-md font-bold flex items-center gap-xs">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Activity className="w-4 h-4 text-primary" />
-                    Performance Breakdown Trends
+                    Performance History
                   </CardTitle>
-                  <CardDescription>
-                    Historical day-by-day visualization of players, visits, playtime, and revenue.
+                  <CardDescription className="mt-1">
+                    Daily history for concurrent players, visits, playtime, and revenue.
                   </CardDescription>
                 </div>
 
                 {/* Metric Tab Buttons */}
-                <div className="flex flex-wrap gap-xs bg-surface-container-low/60 border border-outline-variant/20 p-0.5 rounded-lg self-start">
+                <div className="flex flex-wrap gap-1 bg-surface-container-low/60 border border-outline-variant/20 p-1 rounded-lg self-start">
                   {[
                     { id: "ccu", label: "Players (CCU)" },
                     { id: "visits", label: "Daily Visits" },
@@ -674,11 +656,10 @@ function XRayDashboard() {
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveBreakdownTab(tab.id as any)}
-                        className={`px-sm py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
-                          isActive
-                            ? "bg-primary-container/15 text-primary border border-primary-container/20 shadow-[0_0_10px_rgba(0,175,244,0.05)]"
+                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${isActive
+                            ? "bg-surface-container-highest text-foreground border border-outline/50 shadow-sm"
                             : "text-on-surface-variant hover:text-foreground border border-transparent"
-                        }`}
+                          }`}
                       >
                         {tab.label}
                       </button>
@@ -686,12 +667,12 @@ function XRayDashboard() {
                   })}
                 </div>
               </CardHeader>
-              <CardContent className="pt-md">
+              <CardContent className="pt-6">
                 {/* Timeframe + Comparison selector row */}
-                <div className="flex flex-wrap items-center justify-between gap-sm mb-md pb-sm border-b border-outline-variant/10">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-outline-variant/30">
                   {/* Timeframe */}
-                  <div className="flex flex-wrap items-center gap-xs">
-                    <span className="text-xs text-on-surface-variant font-medium mr-xs">Timeframe:</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-on-surface-variant font-mono font-medium mr-1">Timeframe:</span>
                     {[
                       { label: "7d", value: 7 },
                       { label: "30d", value: 30 },
@@ -701,11 +682,10 @@ function XRayDashboard() {
                       <button
                         key={tf.label}
                         onClick={() => { setTimeframe(tf.value); setComparisonPeriod(null); }}
-                        className={`px-sm py-xs rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                          timeframe === tf.value
-                            ? "bg-primary/15 text-primary border border-primary/30"
+                        className={`px-3 py-1 rounded-md text-xs font-semibold font-mono transition-all cursor-pointer ${timeframe === tf.value
+                            ? "bg-foreground text-background font-bold border border-foreground"
                             : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
-                        }`}
+                          }`}
                       >
                         {tf.label}
                       </button>
@@ -715,21 +695,20 @@ function XRayDashboard() {
                   {/* Compare with — only shown when a specific timeframe is selected */}
                   {timeframe !== null && (() => {
                     const matchMap: Record<number, { label: string; value: number }> = {
-                      7:  { label: "vs. Previous Week",  value: 7  },
+                      7: { label: "vs. Previous Week", value: 7 },
                       30: { label: "vs. Previous Month", value: 30 },
                       90: { label: "vs. Previous 3 Months", value: 90 },
                     };
                     const option = matchMap[timeframe];
                     if (!option) return null;
                     return (
-                      <div className="flex items-center gap-xs">
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={() => setComparisonPeriod(comparisonPeriod === option.value ? null : option.value)}
-                          className={`px-sm py-xs rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                            comparisonPeriod === option.value
-                              ? "bg-primary/15 text-primary border border-primary/30"
+                          className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${comparisonPeriod === option.value
+                              ? "bg-foreground text-background font-bold border border-foreground"
                               : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
-                          }`}
+                            }`}
                         >
                           {comparisonPeriod === option.value ? `✓ ${option.label}` : option.label}
                         </button>
@@ -743,27 +722,27 @@ function XRayDashboard() {
                     <ResponsiveContainer width="100%" height="100%">
                       {activeBreakdownTab === "visits" ? (
                         <BarChart data={consolidatedChartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#272a31" />
-                          <XAxis dataKey="day" stroke="#87929b" fontSize={11} />
-                          <YAxis stroke="#87929b" fontSize={11} tickFormatter={(val) => formatNumber(val)} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                          <XAxis dataKey="day" stroke="#71717a" fontSize={11} />
+                          <YAxis stroke="#71717a" fontSize={11} tickFormatter={(val) => formatNumber(val)} />
                           <Tooltip
-                            contentStyle={{ backgroundColor: "#1d2027", borderColor: "#3e4850", borderRadius: "8px" }}
-                            labelStyle={{ color: "#e0e2ec" }}
+                            contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
+                            labelStyle={{ color: "#f4f4f5" }}
                             formatter={(val) => [formatNumber(val as number), "New Visits"]}
                           />
                           {comparisonPeriod && <Legend />}
                           <Bar
                             dataKey="visits"
                             name="Current Visits"
-                            fill="#00aff4"
-                            fillOpacity={0.8}
+                            fill="#f4f4f5"
+                            fillOpacity={0.9}
                             radius={[4, 4, 0, 0]}
                           />
                           {comparisonPeriod && (
                             <Bar
                               dataKey="visits_prev"
                               name={`Previous ${comparisonPeriod}d`}
-                              fill="#87929b"
+                              fill="#71717a"
                               fillOpacity={0.4}
                               radius={[4, 4, 0, 0]}
                             />
@@ -771,20 +750,20 @@ function XRayDashboard() {
                         </BarChart>
                       ) : activeBreakdownTab === "ccu" ? (
                         <LineChart data={consolidatedChartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#272a31" />
-                          <XAxis dataKey="day" stroke="#87929b" fontSize={11} />
-                          <YAxis stroke="#87929b" fontSize={11} tickFormatter={(val) => formatNumber(val)} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                          <XAxis dataKey="day" stroke="#71717a" fontSize={11} />
+                          <YAxis stroke="#71717a" fontSize={11} tickFormatter={(val) => formatNumber(val)} />
                           <Tooltip
-                            contentStyle={{ backgroundColor: "#1d2027", borderColor: "#3e4850", borderRadius: "8px" }}
-                            labelStyle={{ color: "#e0e2ec" }}
+                            contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
+                            labelStyle={{ color: "#f4f4f5" }}
                             formatter={(val) => [formatNumber(val as number), "Avg CCU"]}
                           />
                           {comparisonPeriod && <Legend />}
-                        <Line
+                          <Line
                             type="monotone"
                             dataKey="ccu"
                             name="Current Avg CCU"
-                            stroke="#85cfff"
+                            stroke="#f4f4f5"
                             strokeWidth={2.5}
                             dot={{ r: 4 }}
                             connectNulls
@@ -794,30 +773,30 @@ function XRayDashboard() {
                               type="monotone"
                               dataKey="ccu_prev"
                               name={`Previous ${comparisonPeriod}d`}
-                              stroke="#85cfff"
+                              stroke="#71717a"
                               strokeWidth={1.5}
                               strokeDasharray="5 5"
-                              strokeOpacity={0.4}
+                              strokeOpacity={0.5}
                               dot={false}
                             />
                           )}
                         </LineChart>
                       ) : activeBreakdownTab === "playtime" ? (
                         <LineChart data={consolidatedChartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#272a31" />
-                          <XAxis dataKey="day" stroke="#87929b" fontSize={11} />
-                          <YAxis stroke="#87929b" fontSize={11} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                          <XAxis dataKey="day" stroke="#71717a" fontSize={11} />
+                          <YAxis stroke="#71717a" fontSize={11} />
                           <Tooltip
-                            contentStyle={{ backgroundColor: "#1d2027", borderColor: "#3e4850", borderRadius: "8px" }}
-                            labelStyle={{ color: "#e0e2ec" }}
+                            contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
+                            labelStyle={{ color: "#f4f4f5" }}
                             formatter={(val) => [`${val} mins`, "Avg Session"]}
                           />
                           {comparisonPeriod && <Legend />}
-                        <Line
+                          <Line
                             type="monotone"
                             dataKey="playtime"
                             name="Current Avg Session"
-                            stroke="#34ff8d"
+                            stroke="#34d399"
                             strokeWidth={2.5}
                             dot={{ r: 4 }}
                             connectNulls
@@ -827,7 +806,7 @@ function XRayDashboard() {
                               type="monotone"
                               dataKey="playtime_prev"
                               name={`Previous ${comparisonPeriod}d`}
-                              stroke="#34ff8d"
+                              stroke="#34d399"
                               strokeWidth={1.5}
                               strokeDasharray="5 5"
                               strokeOpacity={0.4}
@@ -837,20 +816,20 @@ function XRayDashboard() {
                         </LineChart>
                       ) : (
                         <LineChart data={consolidatedChartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#272a31" />
-                          <XAxis dataKey="day" stroke="#87929b" fontSize={11} />
-                          <YAxis stroke="#87929b" fontSize={11} tickFormatter={(val) => formatCurrency(val)} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                          <XAxis dataKey="day" stroke="#71717a" fontSize={11} />
+                          <YAxis stroke="#71717a" fontSize={11} tickFormatter={(val) => formatCurrency(val)} />
                           <Tooltip
-                            contentStyle={{ backgroundColor: "#1d2027", borderColor: "#3e4850", borderRadius: "8px" }}
-                            labelStyle={{ color: "#e0e2ec" }}
+                            contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
+                            labelStyle={{ color: "#f4f4f5" }}
                             formatter={(val) => [formatCurrency(val as number), "Est. Revenue"]}
                           />
                           {comparisonPeriod && <Legend />}
-                        <Line
+                          <Line
                             type="monotone"
                             dataKey="revenue"
                             name="Current Daily Revenue"
-                            stroke="#fdbc13"
+                            stroke="#fbbf24"
                             strokeWidth={2.5}
                             dot={{ r: 4 }}
                             connectNulls
@@ -860,7 +839,7 @@ function XRayDashboard() {
                               type="monotone"
                               dataKey="revenue_prev"
                               name={`Previous ${comparisonPeriod}d`}
-                              stroke="#fdbc13"
+                              stroke="#fbbf24"
                               strokeWidth={1.5}
                               strokeDasharray="5 5"
                               strokeOpacity={0.4}
@@ -871,7 +850,7 @@ function XRayDashboard() {
                       )}
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-body-sm text-on-surface-variant">
+                    <div className="h-full flex items-center justify-center text-sm text-on-surface-variant font-mono">
                       Loading performance visualization...
                     </div>
                   )}
@@ -880,34 +859,34 @@ function XRayDashboard() {
             </Card>
           </div>
         ) : (
-          /* Empty State: Top Games Table */
-          <div className="space-y-lg animate-fade-in">
+          /* Empty State: Top Games Table & Search History */
+          <div className="space-y-8 animate-fade-in">
             {/* Search History Section */}
             {history.length > 0 && (
-              <div className="p-md rounded-xl bg-surface-container/30 border border-outline-variant/60 max-w-2xl">
-                <div className="flex items-center justify-between mb-sm border-b border-outline-variant/40 pb-sm">
-                  <div className="flex items-center gap-xs text-body-sm font-semibold text-foreground">
-                    <History className="w-4 h-4 text-on-surface-variant" />
+              <div className="p-5 rounded-2xl bg-surface-container/40 border border-outline-variant/50 max-w-3xl shadow-sm">
+                <div className="flex items-center justify-between mb-3 border-b border-outline-variant/30 pb-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <History className="w-4 h-4 text-primary" />
                     <span>Recent Searches</span>
                   </div>
                   <button
                     onClick={clearHistory}
-                    className="inline-flex items-center gap-xs text-xs font-semibold text-red-400 hover:text-red-300 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Clear</span>
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-sm">
+                <div className="flex flex-wrap gap-2">
                   {history.map((item) => (
                     <button
                       key={item.id}
                       onClick={() => triggerSearch(item.id)}
-                      className="px-sm py-xs rounded-lg hover:bg-surface-container-high bg-surface-container/60 border border-outline-variant/40 text-body-sm text-primary flex items-center gap-xs transition-colors"
+                      className="px-3 py-1.5 rounded-lg bg-surface-container-high/60 hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/40 text-xs text-primary font-medium flex items-center gap-2 transition-all cursor-pointer shadow-sm"
                     >
                       <span>{item.name}</span>
-                      <span className="text-xs text-on-surface-variant">→</span>
+                      <span className="text-[10px] text-on-surface-variant">→</span>
                     </button>
                   ))}
                 </div>
@@ -916,10 +895,10 @@ function XRayDashboard() {
 
             {/* Top Games Table */}
             <div>
-              <div className="flex items-center gap-xs mb-md">
+              <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-5 h-5 text-primary" />
-                <h2 className="text-headline-sm font-bold">Top Games</h2>
-                <span className="text-body-sm text-on-surface-variant ml-sm">Sorted by active players</span>
+                <h2 className="text-lg font-bold text-foreground">Top Games</h2>
+                <span className="text-xs text-on-surface-variant font-mono ml-2">Sorted by active players</span>
               </div>
 
               <SortableTable
@@ -948,21 +927,21 @@ function XRayDashboard() {
 
       {/* Add To Collection Modal */}
       {addToCollectionModalOpen && activeGame && (
-        <div 
-          style={{ 
-            position: 'fixed', 
-            top: 0, 
-            left: 0, 
-            width: '100vw', 
-            height: '100vh', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            zIndex: 9999 
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999
           }}
         >
           {/* Backdrop */}
-          <div 
+          <div
             onClick={() => setAddToCollectionModalOpen(false)}
             style={{
               position: 'absolute',
@@ -979,7 +958,7 @@ function XRayDashboard() {
           />
 
           {/* Modal Container */}
-          <div 
+          <div
             className="relative overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low p-8 shadow-2xl z-10 transition-all duration-300 transform scale-100 animate-fade-in"
             style={{
               width: 'calc(100% - 2rem)',
@@ -988,7 +967,7 @@ function XRayDashboard() {
             }}
           >
             {/* Close Button */}
-            <button 
+            <button
               onClick={() => setAddToCollectionModalOpen(false)}
               className="absolute top-4 right-4 text-on-surface-variant hover:text-foreground hover:bg-surface-container-high p-1.5 rounded-full transition-colors"
             >
@@ -1009,7 +988,7 @@ function XRayDashboard() {
             </div>
 
             {/* Collections List */}
-            <div className="space-y-sm max-h-48 overflow-y-auto mb-6 pr-1">
+            <div className="space-y-2 max-h-48 overflow-y-auto mb-6 pr-1">
               {userCollections.length > 0 ? (
                 userCollections.map((col) => {
                   const alreadyContains = Array.isArray(col.games) && col.games.map(String).includes(String(activeGame.universeId));
@@ -1018,21 +997,20 @@ function XRayDashboard() {
                       key={col.name}
                       onClick={() => !alreadyContains && performAddToCollection(col.name)}
                       disabled={alreadyContains}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-body-sm font-semibold transition-all ${
-                        alreadyContains
+                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-xs font-semibold transition-all ${alreadyContains
                           ? "bg-surface-container/20 border-outline-variant/30 text-on-surface-variant/40 cursor-not-allowed"
                           : "bg-surface-container hover:bg-surface-container-high border-outline-variant/50 text-foreground cursor-pointer"
-                      }`}
+                        }`}
                     >
                       <span className="truncate">{col.name}</span>
-                      <span className="text-xs font-mono font-medium text-on-surface-variant">
+                      <span className="text-[11px] font-mono font-medium text-on-surface-variant">
                         {alreadyContains ? "Already added" : `${col.games.length}/3 games`}
                       </span>
                     </button>
                   );
                 })
               ) : (
-                <div className="text-center py-md text-body-sm text-on-surface-variant bg-surface-container/30 border border-outline-variant/20 rounded-lg">
+                <div className="text-center py-4 text-xs text-on-surface-variant bg-surface-container/30 border border-outline-variant/20 rounded-lg">
                   No collections yet. Create one below!
                 </div>
               )}
@@ -1043,19 +1021,19 @@ function XRayDashboard() {
               <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
                 Create New Collection
               </label>
-              <div className="flex gap-sm">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   placeholder="Collection name..."
                   value={newColName}
                   onChange={(e) => setNewColName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleCreateAndAddCollection()}
-                  className="flex-1 px-md py-sm rounded-lg bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-body-sm transition-all"
+                  className="flex-1 px-3 py-2 rounded-lg bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs transition-all"
                 />
                 <button
                   onClick={handleCreateAndAddCollection}
                   disabled={!newColName.trim()}
-                  className="px-md py-sm rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary-container transition-all disabled:opacity-40 disabled:hover:bg-primary flex items-center justify-center gap-xs cursor-pointer"
+                  className="px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container transition-all disabled:opacity-40 disabled:hover:bg-primary flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create</span>
@@ -1082,8 +1060,8 @@ export default function XrayPage() {
     <Suspense fallback={
       <div className="flex-1 flex items-center justify-center bg-background text-foreground h-screen">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-md"></div>
-          <span className="text-body-md text-on-surface-variant font-mono">Initializing Diagnostic System...</span>
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <span className="text-sm text-on-surface-variant">Loading game details...</span>
         </div>
       </div>
     }>

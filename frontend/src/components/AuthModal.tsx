@@ -36,10 +36,21 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data: any = null;
+      const text = await response.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = null;
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || data.error || "An error occurred.");
+        const errorMsg =
+          data?.message ||
+          data?.error ||
+          (text && text.trim().length > 0 ? text : null) ||
+          `Request failed with status ${response.status}`;
+        throw new Error(errorMsg);
       }
 
       if (isSignUp) {
@@ -49,10 +60,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         setPassword("");
       } else {
         localStorage.setItem("user", JSON.stringify({
-          username: data.email,
-          email: data.email,
-          role: data.role,
-          token: data.token,
+          username: data?.email || email,
+          email: data?.email || email,
+          role: data?.role || "USER",
+          token: data?.token,
         }));
         window.dispatchEvent(new Event("auth-change"));
         onClose();
@@ -105,10 +116,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           boxSizing: 'border-box'
         }}
       >
-        
-        {/* Glow Effect */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-secondary/15 rounded-full blur-3xl pointer-events-none" />
 
         {/* Close Button */}
         <button 

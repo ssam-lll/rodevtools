@@ -35,7 +35,7 @@ interface Collection {
   updatedAt: number;
 }
 
-const METRIC_COLORS = ["#85cfff", "#34ff8d", "#fdbc13", "#a855f7", "#ec4899"];
+const METRIC_COLORS = ["#f4f4f5", "#a1a1aa", "#38bdf8", "#34d399", "#fbbf24"];
 
 const COMPARISON_PERIODS = [
   { label: "Previous Week", value: 7 },
@@ -54,7 +54,7 @@ function getCollections(): Record<string, Collection> {
         userKey = parsed.email;
       }
     }
-  } catch {}
+  } catch { }
   const storageKey = `collections_${userKey}`;
   try {
     return JSON.parse(localStorage.getItem(storageKey) || "{}");
@@ -73,7 +73,7 @@ function saveCollections(collections: Record<string, Collection>) {
         userKey = parsed.email;
       }
     }
-  } catch {}
+  } catch { }
   const storageKey = `collections_${userKey}`;
   localStorage.setItem(storageKey, JSON.stringify(collections));
 }
@@ -167,7 +167,7 @@ export default function ComparePage() {
     const fetchHistory = async () => {
       setHistoryLoading(true);
       const newHistory: Record<string, { dailyMetrics: any[] }> = {};
-      
+
       try {
         await Promise.all(
           comparedGames.map(async (game) => {
@@ -208,8 +208,8 @@ export default function ComparePage() {
 
   // Combine historical data for Recharts based on activeCompareTab
   const combinedChartData = useMemo(() => {
-    const datesMap: Record<string, { day: string; [gameName: string]: any }> = {};
-    
+    const datesMap: Record<string, { day: string;[gameName: string]: any }> = {};
+
     comparedGames.forEach((game) => {
       const metrics = comparedGamesHistory[game.universeId]?.dailyMetrics || [];
       const comparedMetrics = comparisonPeriod
@@ -317,7 +317,7 @@ export default function ComparePage() {
   // Add game to active collection
   const addGameToCollection = useCallback((id: string | number) => {
     if (!activeCollectionName || !collections[activeCollectionName]) return;
-    
+
     const gameIdStr = String(id);
     const existingGames = Array.isArray(collections[activeCollectionName].games)
       ? collections[activeCollectionName].games.map(String)
@@ -353,7 +353,7 @@ export default function ComparePage() {
   // Remove game from active collection
   const removeGameFromCollection = useCallback((id: string | number) => {
     if (!activeCollectionName || !collections[activeCollectionName]) return;
-    
+
     const gameIdStr = String(id);
     const existingGames = Array.isArray(collections[activeCollectionName].games)
       ? collections[activeCollectionName].games.map(String)
@@ -498,30 +498,21 @@ export default function ComparePage() {
   const collectionEntries = Object.values(collections).sort((a, b) => b.updatedAt - a.updatedAt);
 
   return (
-    <main className="relative flex-1 bg-background text-foreground py-xl px-gutter overflow-hidden">
-      
-      {/* Background Radial Glow */}
-      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[150px] pointer-events-none" />
-
-      <div className="container-max z-10 relative">
-        
+    <main className="relative flex-1 bg-background text-foreground p-6 md:p-8">
+      <div className="container-max z-10">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-md mb-xl border-b border-outline-variant/30 pb-lg">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-outline-variant/30 pb-6">
           <div>
-            <div className="flex items-center gap-xs text-primary mb-xs">
-              <GitCompare className="w-5 h-5" />
-              <span className="text-label-caps font-semibold">Metrics Hub</span>
-            </div>
-            <h1 className="text-headline-lg font-bold">Game Comparer</h1>
-            <p className="text-body-md text-on-surface-variant mt-xs">
-              Create collections of Roblox games and compare their performance metrics side-by-side.
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Game Comparer</h1>
+            <p className="text-sm text-on-surface-variant mt-1">
+              Create collections of Roblox games and compare their performance metrics side by side.
             </p>
           </div>
 
           {activeCollectionName && (
             <button
               onClick={() => setActiveCollectionName(null)}
-              className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant text-body-sm font-semibold transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant text-xs font-semibold transition-all cursor-pointer"
             >
               <FolderOpen className="w-4 h-4 text-primary" />
               <span>All Collections</span>
@@ -531,25 +522,25 @@ export default function ComparePage() {
 
         {/* Loading State */}
         {loading ? (
-          <div className="flex justify-center py-xl">
+          <div className="flex justify-center py-16">
             <div className="text-center">
-              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-md"></div>
-              <span className="text-body-md text-on-surface-variant font-mono">Loading metrics...</span>
+              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <span className="text-sm text-on-surface-variant">Loading comparison data...</span>
             </div>
           </div>
         ) : !mounted ? null : !user ? (
           /* Sign In Prompt when not logged in */
-          <div className="max-w-[500px] mx-auto py-xl text-center animate-fade-in">
-            <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-md shadow-[0_0_15px_rgba(0,175,244,0.15)]">
-              <FolderOpen className="w-8 h-8 text-primary animate-pulse" />
+          <div className="max-w-[500px] mx-auto py-16 text-center animate-fade-in">
+            <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+              <FolderOpen className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-headline-md font-bold text-foreground">Sign In Required</h2>
-            <p className="text-body-md text-on-surface-variant mt-xs mb-lg">
-              Please sign in to view and manage collections. Collections allow you to compare your favorite Roblox titles side-by-side.
+            <h2 className="text-xl font-bold text-foreground">Sign In Required</h2>
+            <p className="text-sm text-on-surface-variant mt-2 mb-6 leading-relaxed">
+              Please sign in to view and manage collections. Collections allow you to compare your favorite Roblox titles side by side.
             </p>
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary-container transition-all cursor-pointer shadow-[0_0_10px_rgba(0,175,244,0.2)]"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container transition-all cursor-pointer shadow-sm"
             >
               <LogIn className="w-4 h-4" />
               <span>Sign In</span>
@@ -557,22 +548,22 @@ export default function ComparePage() {
           </div>
         ) : activeCollectionName && activeCollection ? (
           /* Active Collection - Comparison View */
-          <div className="space-y-lg animate-fade-in">
+          <div className="space-y-6 animate-fade-in">
             {/* Collection Header */}
-            <div className="flex items-center justify-between gap-md">
-              <h2 className="text-headline-md font-bold">{activeCollectionName}</h2>
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-xl font-bold text-foreground">{activeCollectionName}</h2>
               {activeCollection.games.length < 3 && (
                 <div className="relative">
                   <button
                     onClick={() => setSelectorOpen(!selectorOpen)}
-                    className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary-container transition-all"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container transition-all cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Game ({activeCollection.games.length}/3)</span>
                   </button>
 
                   {selectorOpen && (
-                    <div className="absolute right-0 mt-xs w-72 rounded-lg border border-outline bg-surface-container shadow-2xl z-50 p-xs max-h-64 overflow-y-auto">
+                    <div className="absolute right-0 mt-2 w-72 rounded-xl border border-outline bg-surface-container shadow-2xl z-50 p-2 max-h-64 overflow-y-auto">
                       {/* Search Bar inside selector */}
                       <div className="p-1 border-b border-outline-variant/30 sticky top-0 bg-surface-container z-10">
                         <input
@@ -580,7 +571,7 @@ export default function ComparePage() {
                           placeholder="Search game..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full px-sm py-xs text-xs rounded bg-surface-container-high border border-outline-variant/60 focus:outline-none focus:border-primary placeholder:text-on-surface-variant/40"
+                          className="w-full px-3 py-1.5 text-xs rounded bg-surface-container-high border border-outline-variant/60 focus:outline-none focus:border-primary placeholder:text-on-surface-variant/40"
                         />
                       </div>
                       <div className="mt-1">
@@ -592,17 +583,17 @@ export default function ComparePage() {
                                 addGameToCollection(id);
                                 setSearchQuery("");
                               }}
-                              className="w-full text-left px-sm py-sm rounded hover:bg-surface-container-high text-body-sm font-semibold flex items-center gap-sm transition-colors"
+                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-container-high text-xs font-semibold flex items-center gap-2.5 transition-colors cursor-pointer"
                             >
                               <GameThumbnail universeId={id} size="sm" />
                               <div className="flex-1 min-w-0">
                                 <div className="text-foreground truncate">{database[id].name}</div>
-                                <div className="text-xs text-on-surface-variant font-mono">{id}</div>
+                                <div className="text-[10px] text-on-surface-variant font-mono">{id}</div>
                               </div>
                             </button>
                           ))
                         ) : (
-                          <div className="text-center py-md text-body-sm text-on-surface-variant">
+                          <div className="text-center py-4 text-xs text-on-surface-variant">
                             {availableOptions.length > 0 ? "No matches found" : "All available games added"}
                           </div>
                         )}
@@ -614,36 +605,37 @@ export default function ComparePage() {
             </div>
 
             {comparedGames.length === 0 ? (
-              <div className="max-w-[500px] mx-auto py-xl text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-md">
-                  <GitCompare className="w-8 h-8 text-primary animate-pulse" />
+              <div className="max-w-[500px] mx-auto py-16 text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+                  <GitCompare className="w-8 h-8 text-primary" />
                 </div>
-                <h2 className="text-headline-md font-bold text-foreground">Empty Collection</h2>
-                <p className="text-body-md text-on-surface-variant mt-xs mb-lg">
+                <h2 className="text-xl font-bold text-foreground">Empty Collection</h2>
+                <p className="text-sm text-on-surface-variant mt-2 mb-6">
                   Add games to this collection to start comparing metrics.
                 </p>
               </div>
             ) : (
               <>
                 {/* Comparative Table */}
-                <div className="overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container-lowest/40 backdrop-blur-sm">
+                <div className="overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface-container-lowest/40 backdrop-blur-sm shadow-sm">
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-left">
                       <thead>
                         <tr className="border-b border-outline-variant/60 bg-surface-container/50">
-                          <th className="p-md text-label-caps text-on-surface-variant font-semibold w-48">Metric</th>
+                          <th className="px-4 py-3.5 text-xs uppercase tracking-wider text-on-surface-variant font-semibold w-48">Metric</th>
                           {comparedGames.map((game) => (
-                            <th key={game.universeId} className="p-md text-center">
-                              <div className="flex flex-col items-center gap-xs">
+                            <th key={game.universeId} className="px-4 py-3.5 text-center">
+                              <div className="flex flex-col items-center gap-1.5">
                                 <GameThumbnail universeId={game.universeId} size="sm" />
-                                <span className="text-body-sm font-semibold text-foreground truncate max-w-[120px]">
+                                <span className="text-xs font-semibold text-foreground truncate max-w-[120px]">
                                   {game.name}
                                 </span>
                                 <button
                                   onClick={() => removeGameFromCollection(game.universeId)}
-                                  className="text-on-surface-variant/50 hover:text-red-400 transition-colors"
+                                  className="text-on-surface-variant/50 hover:text-red-400 transition-colors cursor-pointer"
+                                  title="Remove from comparison"
                                 >
-                                  <Trash2 className="w-3 h-3" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             </th>
@@ -656,10 +648,10 @@ export default function ComparePage() {
                           const winnerId = winners[metric.key];
                           return (
                             <tr key={metric.key} className="hover:bg-surface-container-high/20 transition-colors">
-                              <td className="p-md">
-                                <div className="flex items-center gap-xs">
+                              <td className="px-4 py-3.5">
+                                <div className="flex items-center gap-2">
                                   <Icon className={`w-4 h-4 ${metric.iconColor}`} />
-                                  <span className="text-body-sm font-semibold text-on-surface-variant">{metric.label}</span>
+                                  <span className="text-xs font-semibold text-on-surface-variant">{metric.label}</span>
                                 </div>
                               </td>
                               {comparedGames.map((game) => {
@@ -667,17 +659,13 @@ export default function ComparePage() {
                                 return (
                                   <td
                                     key={game.universeId}
-                                    className={`p-md text-center font-mono font-bold ${
-                                      isWinner
-                                        ? "bg-emerald-500/8 text-emerald-400"
+                                    className={`px-4 py-3.5 text-center font-mono font-bold text-xs ${isWinner
+                                        ? "bg-emerald-500/10 text-emerald-400 font-extrabold"
                                         : "text-foreground"
-                                    }`}
+                                      }`}
                                   >
-                                    <div className="flex items-center justify-center gap-xs">
+                                    <div className="flex items-center justify-center gap-1.5">
                                       <span>{metric.format(game[metric.key] as number)}</span>
-                                      {isWinner && (
-                                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                      )}
                                     </div>
                                   </td>
                                 );
@@ -692,19 +680,19 @@ export default function ComparePage() {
 
                 {/* Comparative Switcher Card */}
                 <Card>
-                  <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-sm">
+                  <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-outline-variant/30 pb-4">
                     <div>
-                      <CardTitle className="text-body-md font-bold flex items-center gap-xs">
+                      <CardTitle className="text-base font-bold flex items-center gap-2">
                         <Activity className="w-4 h-4 text-primary" />
-                        Comparative Performance Trends
+                        Historical Comparison
                       </CardTitle>
-                      <CardDescription>
-                        Compare players, visits, playtime, and revenue trends side-by-side.
+                      <CardDescription className="mt-1">
+                        Compare player counts, visits, session lengths, and revenue over time.
                       </CardDescription>
                     </div>
 
                     {/* Metric Tab Buttons */}
-                    <div className="flex flex-wrap gap-xs bg-surface-container-low/60 border border-outline-variant/20 p-0.5 rounded-lg self-start">
+                    <div className="flex flex-wrap gap-1 bg-surface-container-low/60 border border-outline-variant/20 p-1 rounded-lg self-start">
                       {[
                         { id: "ccu", label: "Players (CCU)" },
                         { id: "visits", label: "Daily Visits" },
@@ -717,11 +705,10 @@ export default function ComparePage() {
                             key={tab.id}
                             type="button"
                             onClick={() => setActiveCompareTab(tab.id as any)}
-                            className={`px-sm py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
-                              isActive
-                                ? "bg-primary-container/15 text-primary border border-primary-container/20 shadow-[0_0_10px_rgba(0,175,244,0.05)]"
+                            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${isActive
+                                ? "bg-surface-container-highest text-foreground border border-outline/50 shadow-sm"
                                 : "text-on-surface-variant hover:text-foreground border border-transparent"
-                            }`}
+                              }`}
                           >
                             {tab.label}
                           </button>
@@ -729,12 +716,12 @@ export default function ComparePage() {
                       })}
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-md">
+                  <CardContent className="pt-6">
                     {/* Timeframe & Comparison controls */}
-                    <div className="flex flex-wrap items-center justify-between gap-sm mb-md pb-sm border-b border-outline-variant/10">
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-outline-variant/30">
                       {/* Timeframe Selector */}
-                      <div className="flex flex-wrap items-center gap-xs">
-                        <span className="text-xs text-on-surface-variant font-medium mr-xs">Timeframe:</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-on-surface-variant font-mono font-medium mr-1">Timeframe:</span>
                         {[
                           { label: "7 Days", value: 7 },
                           { label: "30 Days", value: 30 },
@@ -744,35 +731,33 @@ export default function ComparePage() {
                           <button
                             key={tf.label}
                             onClick={() => { setTimeframe(tf.value); setComparisonPeriod(null); }}
-                            className={`px-sm py-xs rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                              timeframe === tf.value
-                                ? "bg-primary/15 text-primary border border-primary/30"
+                            className={`px-3 py-1 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer ${timeframe === tf.value
+                                ? "bg-foreground text-background font-bold border border-foreground"
                                 : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
-                            }`}
+                              }`}
                           >
                             {tf.label}
                           </button>
                         ))}
                       </div>
 
-                      {/* Compare with — only the matching period for the active timeframe */}
+                      {/* Compare with */}
                       {timeframe !== null && (() => {
                         const matchMap: Record<number, { label: string; value: number }> = {
-                          7:  { label: "vs. Previous Week",   value: 7  },
-                          30: { label: "vs. Previous Month",  value: 30 },
+                          7: { label: "vs. Previous Week", value: 7 },
+                          30: { label: "vs. Previous Month", value: 30 },
                           90: { label: "vs. Previous 3 Months", value: 90 },
                         };
                         const option = matchMap[timeframe];
                         if (!option) return null;
                         return (
-                          <div className="flex items-center gap-xs">
+                          <div className="flex items-center gap-2">
                             <button
                               onClick={() => setComparisonPeriod(comparisonPeriod === option.value ? null : option.value)}
-                              className={`px-sm py-xs rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                                comparisonPeriod === option.value
-                                  ? "bg-primary/15 text-primary border border-primary/30"
+                              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${comparisonPeriod === option.value
+                                  ? "bg-foreground text-background font-bold border border-foreground"
                                   : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
-                              }`}
+                                }`}
                             >
                               {comparisonPeriod === option.value ? `✓ ${option.label}` : option.label}
                             </button>
@@ -783,19 +768,19 @@ export default function ComparePage() {
 
                     <div className="h-80">
                       {historyLoading ? (
-                        <div className="h-full flex items-center justify-center text-body-sm text-on-surface-variant font-mono animate-pulse">
-                          Loading historical trends...
+                        <div className="h-full flex items-center justify-center text-xs text-on-surface-variant font-mono">
+                          Loading chart...
                         </div>
                       ) : mounted ? (
                         <ResponsiveContainer width="100%" height="100%">
                           {activeCompareTab === "visits" ? (
                             <BarChart data={combinedChartData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#272a31" />
-                              <XAxis dataKey="day" stroke="#87929b" fontSize={11} />
-                              <YAxis stroke="#87929b" fontSize={11} tickFormatter={(val) => formatNumber(val)} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                              <XAxis dataKey="day" stroke="#71717a" fontSize={11} />
+                              <YAxis stroke="#71717a" fontSize={11} tickFormatter={(val) => formatNumber(val)} />
                               <Tooltip
-                                contentStyle={{ backgroundColor: "#1d2027", borderColor: "#3e4850", borderRadius: "8px" }}
-                                labelStyle={{ color: "#e0e2ec" }}
+                                contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
+                                labelStyle={{ color: "#f4f4f5" }}
                                 formatter={(val) => [formatNumber(val as number), "New Visits"]}
                               />
                               <Legend />
@@ -820,25 +805,25 @@ export default function ComparePage() {
                             </BarChart>
                           ) : (
                             <LineChart data={combinedChartData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#272a31" />
-                              <XAxis dataKey="day" stroke="#87929b" fontSize={11} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                              <XAxis dataKey="day" stroke="#71717a" fontSize={11} />
                               <YAxis
-                                stroke="#87929b"
+                                stroke="#71717a"
                                 fontSize={11}
-                                tickFormatter={(val) => 
+                                tickFormatter={(val) =>
                                   activeCompareTab === "revenue" ? formatCurrency(val) : formatNumber(val)
                                 }
                               />
                               <Tooltip
-                                contentStyle={{ backgroundColor: "#1d2027", borderColor: "#3e4850", borderRadius: "8px" }}
-                                labelStyle={{ color: "#e0e2ec" }}
+                                contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
+                                labelStyle={{ color: "#f4f4f5" }}
                                 formatter={(val) => [
                                   activeCompareTab === "revenue" ? formatCurrency(val as number)
-                                  : activeCompareTab === "playtime" ? `${val} min`
-                                  : formatNumber(val as number),
+                                    : activeCompareTab === "playtime" ? `${val} min`
+                                      : formatNumber(val as number),
                                   activeCompareTab === "ccu" ? "Players (CCU)"
-                                  : activeCompareTab === "playtime" ? "Avg Session"
-                                  : "Est. Revenue"
+                                    : activeCompareTab === "playtime" ? "Avg Session"
+                                      : "Est. Revenue"
                                 ]}
                               />
                               <Legend />
@@ -870,7 +855,7 @@ export default function ComparePage() {
                           )}
                         </ResponsiveContainer>
                       ) : (
-                        <div className="h-full flex items-center justify-center text-body-sm text-on-surface-variant">
+                        <div className="h-full flex items-center justify-center text-xs text-on-surface-variant font-mono">
                           Loading chart...
                         </div>
                       )}
@@ -882,11 +867,11 @@ export default function ComparePage() {
           </div>
         ) : (
           /* Collections List View */
-          <div className="space-y-lg animate-fade-in">
+          <div className="space-y-6 animate-fade-in">
             {/* New Collection Button / Form */}
-            <div className="flex items-center gap-md">
+            <div className="flex items-center gap-4">
               {creatingCollection ? (
-                <div className="flex items-center gap-sm">
+                <div className="flex items-center gap-2">
                   <input
                     type="text"
                     placeholder="Collection name..."
@@ -894,18 +879,18 @@ export default function ComparePage() {
                     onChange={(e) => setNewCollectionName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && createCollection()}
                     autoFocus
-                    className="px-md py-sm rounded-lg bg-surface-container/60 border border-primary/30 focus:border-primary focus:outline-none text-body-sm transition-all placeholder:text-on-surface-variant/50 w-64"
+                    className="px-3 py-2 rounded-xl bg-surface-container/60 border border-primary/30 focus:border-primary focus:outline-none text-xs transition-all placeholder:text-on-surface-variant/50 w-64 font-medium"
                   />
                   <button
                     onClick={createCollection}
                     disabled={!newCollectionName.trim()}
-                    className="p-sm rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-all disabled:opacity-40"
+                    className="p-2 rounded-xl bg-primary text-on-primary hover:bg-primary-container transition-all disabled:opacity-40 cursor-pointer"
                   >
                     <Check className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => { setCreatingCollection(false); setNewCollectionName(""); }}
-                    className="p-sm rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant transition-all"
+                    className="p-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant transition-all cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -913,7 +898,7 @@ export default function ComparePage() {
               ) : (
                 <button
                   onClick={() => setCreatingCollection(true)}
-                  className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary-container transition-all"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container transition-all cursor-pointer shadow-sm"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Collection</span>
@@ -923,17 +908,17 @@ export default function ComparePage() {
 
             {/* Collections Grid */}
             {collectionEntries.length === 0 ? (
-              <div className="max-w-[500px] mx-auto py-xl text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-md">
-                  <FolderOpen className="w-8 h-8 text-primary animate-pulse" />
+              <div className="max-w-[500px] mx-auto py-16 text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+                  <FolderOpen className="w-8 h-8 text-primary" />
                 </div>
-                <h2 className="text-headline-md font-bold text-foreground">No Collections Yet</h2>
-                <p className="text-body-md text-on-surface-variant mt-xs mb-lg">
+                <h2 className="text-xl font-bold text-foreground">No Collections Yet</h2>
+                <p className="text-sm text-on-surface-variant mt-2 mb-6">
                   Create a collection to group Roblox games and compare their metrics. You can also add games from the X-Ray page.
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {collectionEntries.map((col) => (
                   <Card
                     key={col.name}
@@ -943,31 +928,31 @@ export default function ComparePage() {
                     {/* Delete button */}
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteCollection(col.name); }}
-                      className="absolute top-md right-md p-xs rounded-lg hover:bg-red-500/10 text-on-surface-variant hover:text-red-400 border border-transparent hover:border-red-500/20 transition-all z-10 opacity-0 group-hover:opacity-100"
+                      className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-red-500/10 text-on-surface-variant hover:text-red-400 border border-transparent hover:border-red-500/20 transition-all z-10 opacity-0 group-hover:opacity-100 cursor-pointer"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
 
                     <CardHeader>
                       {editingName === col.name ? (
-                        <div className="flex items-center gap-xs" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="text"
                             value={editNameValue}
                             onChange={(e) => setEditNameValue(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && renameCollection(col.name)}
                             autoFocus
-                            className="px-sm py-xs rounded bg-surface-container border border-primary/30 focus:outline-none text-body-sm font-semibold w-full"
+                            className="px-3 py-1.5 rounded-lg bg-surface-container border border-primary/30 focus:outline-none text-xs font-semibold w-full"
                           />
                           <button
                             onClick={() => renameCollection(col.name)}
-                            className="p-xs rounded bg-primary text-on-primary"
+                            className="p-1.5 rounded-lg bg-primary text-on-primary cursor-pointer"
                           >
-                            <Check className="w-3 h-3" />
+                            <Check className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ) : (
-                        <CardTitle className="flex items-center gap-xs pr-8">
+                        <CardTitle className="flex items-center gap-2 pr-8 text-base">
                           <FolderOpen className="w-4 h-4 text-primary flex-shrink-0" />
                           <span className="truncate">{col.name}</span>
                           <button
@@ -976,20 +961,20 @@ export default function ComparePage() {
                               setEditingName(col.name);
                               setEditNameValue(col.name);
                             }}
-                            className="p-0.5 rounded hover:bg-surface-container-high text-on-surface-variant/40 hover:text-on-surface-variant opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                            className="p-1 rounded hover:bg-surface-container-high text-on-surface-variant/40 hover:text-on-surface-variant opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 cursor-pointer"
                           >
                             <Pencil className="w-3 h-3" />
                           </button>
                         </CardTitle>
                       )}
-                      <CardDescription>
+                      <CardDescription className="mt-1">
                         {col.games.length} game{col.games.length !== 1 ? "s" : ""} · Updated {new Date(col.updatedAt).toLocaleDateString()}
                       </CardDescription>
                     </CardHeader>
 
                     <CardContent>
                       {col.games.length > 0 ? (
-                        <div className="flex items-center gap-sm">
+                        <div className="flex items-center gap-2">
                           {col.games.slice(0, 4).map((id) => (
                             <GameThumbnail key={id} universeId={id} size="sm" />
                           ))}
@@ -998,7 +983,7 @@ export default function ComparePage() {
                           )}
                         </div>
                       ) : (
-                        <span className="text-body-sm text-on-surface-variant">No games added yet</span>
+                        <span className="text-xs text-on-surface-variant">No games added yet</span>
                       )}
                     </CardContent>
                   </Card>

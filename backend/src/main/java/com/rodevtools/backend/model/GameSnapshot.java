@@ -10,7 +10,12 @@ import java.time.Instant;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "game_snapshots")
+@Table(
+    name = "game_snapshots",
+    indexes = {
+        @Index(name = "idx_game_snapshots_universe_time", columnList = "universe_id, timestamp")
+    }
+)
 @Data
 @NoArgsConstructor
 public class GameSnapshot {

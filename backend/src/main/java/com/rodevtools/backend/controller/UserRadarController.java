@@ -32,8 +32,8 @@ public class UserRadarController {
 
         List<GameResponseDto> trackedGames = userRadarRepository.findByUserId(userId).stream().map(radar -> {
             Game game = radar.getGame();
-            double monthlyRevenue = game.getPlaying() != null ? game.getPlaying() * 4.5 * 30 : 0.0;
-            int playtime = 15 + (int)(game.getUniverseId() % 15);
+            double monthlyRevenue = gameService.calculateMonthlyRevenue(game.getPlaying());
+            int playtime = gameService.calculateEstimatedPlaytime(game.getPlaying(), game.getVisits());
             return new GameResponseDto(
                     game.getUniverseId(),
                     game.getGameName(),

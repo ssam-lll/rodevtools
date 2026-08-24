@@ -19,7 +19,7 @@ export default function Logo({ size = "md", className = "" }: LogoProps) {
       rSize: "text-[16px]",
     },
     lg: {
-      icon: "w-16 h-16 rounded-[16px] text-3xl shadow-[0_0_30px_rgba(0,175,244,0.3)]",
+      icon: "w-16 h-16 rounded-[16px] text-3xl shadow-lg",
       text: "text-4xl md:text-5xl gap-4 flex-col sm:flex-row text-center sm:text-left",
       rSize: "text-[32px]",
     },
@@ -34,25 +34,24 @@ export default function Logo({ size = "md", className = "" }: LogoProps) {
       <div 
         className={`
           ${current.icon}
-          bg-gradient-to-br from-primary-container to-inverse-primary
-          border border-white/10
+          bg-foreground text-background
+          border border-white/20
           flex items-center justify-center 
           select-none 
-          shadow-[0_0_12px_rgba(0,175,244,0.2)] 
+          shadow-sm
           group-hover:scale-105 
-          group-hover:shadow-[0_0_18px_rgba(0,175,244,0.4)] 
           transition-all duration-300
         `}
       >
-        <span className={`text-white font-black leading-none ${current.rSize} select-none`}>
+        <span className={`text-zinc-950 font-black leading-none ${current.rSize} select-none`}>
           R
         </span>
       </div>
       
       {/* Brand Text */}
       <Tag className="font-extrabold tracking-tight transition-opacity group-hover:opacity-90">
-        <span className="text-on-surface">Ro</span>
-        <span className="text-primary-container">DevTools</span>
+        <span className="text-foreground">Ro</span>
+        <span className="text-zinc-400">DevTools</span>
       </Tag>
     </div>
   );

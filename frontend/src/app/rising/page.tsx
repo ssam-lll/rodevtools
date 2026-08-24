@@ -93,7 +93,7 @@ export default function RisingPage() {
   };
 
   // Dynamic statistics — from current page data
-  const topGaining = games.length > 0 
+  const topGaining = games.length > 0
     ? [...games].sort((a, b) => b.growth24h - a.growth24h)[0]
     : null;
 
@@ -171,13 +171,12 @@ export default function RisingPage() {
       align: "center",
       sortValue: (game) => game.healthScore,
       render: (game) => (
-        <span className={`inline-flex items-center px-sm py-xs rounded text-xs font-mono font-bold ${
-          game.healthScore >= 95
+        <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-mono font-bold ${game.healthScore >= 95
             ? "bg-emerald-500/10 text-emerald-400"
             : game.healthScore >= 90
-            ? "bg-primary/10 text-primary"
-            : "bg-amber-500/10 text-amber-400"
-        }`}>
+              ? "bg-primary/10 text-primary"
+              : "bg-amber-500/10 text-amber-400"
+          }`}>
           {Math.round(game.healthScore)}%
         </span>
       ),
@@ -190,28 +189,20 @@ export default function RisingPage() {
   };
 
   return (
-    <main className="relative flex-1 bg-background text-foreground py-xl px-gutter overflow-hidden">
-      
-      {/* Background Radial Glow */}
-      <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
-
-      <div className="container-max z-10 relative">
+    <main className="relative flex-1 bg-background text-foreground p-6 md:p-8">
+      <div className="container-max z-10">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-md mb-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-outline-variant/30 pb-6">
           <div>
-            <div className="flex items-center gap-xs text-primary mb-xs">
-              <TrendingUp className="w-5 h-5" />
-              <span className="text-label-caps font-semibold">Technical Trends</span>
-            </div>
-            <h1 className="text-headline-lg font-bold">Rising Stars</h1>
-            <p className="text-body-md text-on-surface-variant mt-xs">
-              Roblox games experiencing accelerated growth in player base and engagement.
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Rising Stars</h1>
+            <p className="text-sm text-on-surface-variant mt-1">
+              Roblox games with the highest player growth over the last 24 hours.
             </p>
           </div>
 
           {/* Search bar */}
           <div className="relative w-full md:w-80">
-            <span className="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
               <Search className="w-4 h-4 text-on-surface-variant" />
             </span>
             <input
@@ -219,34 +210,33 @@ export default function RisingPage() {
               placeholder="Search by game name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-xl pr-md py-sm rounded-lg bg-surface-container/60 hover:bg-surface-container focus:bg-surface-container border border-outline-variant focus:border-primary focus:outline-none text-body-sm transition-all placeholder:text-on-surface-variant/60"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high focus:bg-surface-container-high border border-outline-variant focus:border-zinc-500 focus:outline-none text-sm transition-all placeholder:text-on-surface-variant/60"
             />
           </div>
         </div>
 
         {/* Quick Stats - Top Gaining Game (horizontal card) */}
-        <div className="mb-lg">
+        <div className="mb-6">
           <button
             onClick={() => topGaining && router.push(`/xray?universeId=${topGaining.universeId}`)}
-            className={`inline-flex items-center gap-md p-md pr-lg rounded-xl bg-surface-container/40 border border-outline-variant/60 text-left transition-all duration-200 ${
-              topGaining ? "hover:border-primary/40 hover:bg-surface-container/60 cursor-pointer group" : ""
-            }`}
+            className={`inline-flex items-center gap-4 p-4 pr-6 rounded-2xl bg-surface-container border border-outline-variant text-left transition-all duration-200 ${topGaining ? "hover:border-zinc-500 hover:bg-surface-container-high cursor-pointer group" : ""
+              }`}
           >
-            <div className="p-xs rounded bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
+            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
               <ArrowUpRight className="w-4 h-4" />
             </div>
             {topGaining && <GameThumbnail universeId={topGaining.universeId} size="md" />}
-            <div className="flex items-center gap-lg min-w-0">
+            <div className="flex items-center gap-6 min-w-0">
               <div className="min-w-0">
                 <span className="text-xs text-on-surface-variant block mb-0.5">Top Gaining Game</span>
-                <div className="text-headline-sm font-bold truncate group-hover:text-primary transition-colors">
+                <div className="text-base font-bold truncate group-hover:text-white transition-colors">
                   {topGaining ? topGaining.name : "None"}
                 </div>
               </div>
-              <div className={`text-body-sm font-semibold font-mono flex-shrink-0 ${topGaining && topGaining.growth24h >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+              <div className={`text-sm font-semibold font-mono flex-shrink-0 ${topGaining && topGaining.growth24h >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                 {topGaining ? (topGaining.growth24h >= 0 ? `+${topGaining.growth24h}%` : `${topGaining.growth24h}%`) : "0%"}
               </div>
-              <span className="text-xs text-on-surface-variant/50 group-hover:text-primary/60 transition-colors flex-shrink-0 hidden sm:block">View X-Ray →</span>
+              <span className="text-xs text-on-surface-variant/50 group-hover:text-zinc-300 transition-colors flex-shrink-0 hidden sm:block">View details →</span>
             </div>
           </button>
         </div>
@@ -259,7 +249,7 @@ export default function RisingPage() {
           defaultSortDir="desc"
           onRowClick={handleRowClick}
           loading={loading}
-          loadingMessage="Loading rising stars..."
+          loadingMessage="Loading games..."
           emptyMessage={searchTerm ? `No rising stars found matching "${searchTerm}"` : "No games found."}
           rowKey={(game) => game.universeId}
           currentPage={currentPage}

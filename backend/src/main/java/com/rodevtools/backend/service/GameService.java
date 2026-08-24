@@ -8,6 +8,7 @@ import com.rodevtools.backend.repository.GameRepository;
 import com.rodevtools.backend.repository.GameSnapshotRepository;
 import com.rodevtools.backend.repository.projection.DailyAnalyticsProjection;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GameService {
@@ -27,7 +29,7 @@ public class GameService {
     private final GameSnapshotRepository gameSnapshotRepository;
     private final RobloxApiService robloxApiService;
 
-    public List<Game> findAll(){
+    public List<Game> findAll() {
         return gameRepository.findAll();
     }
 
@@ -36,7 +38,8 @@ public class GameService {
         boolean hasCategory = category != null && !category.isBlank();
 
         if (hasSearch && hasCategory) {
-            return gameRepository.findByGameNameContainingIgnoreCaseAndCategory(search.trim(), category.trim(), pageable);
+            return gameRepository.findByGameNameContainingIgnoreCaseAndCategory(search.trim(), category.trim(),
+                    pageable);
         } else if (hasSearch) {
             return gameRepository.findByGameNameContainingIgnoreCase(search.trim(), pageable);
         } else if (hasCategory) {
@@ -46,15 +49,15 @@ public class GameService {
         }
     }
 
-    public Optional<Game> findById(Long universeId){
+    public Optional<Game> findById(Long universeId) {
         return gameRepository.findById(universeId);
     }
 
-    public Game saveOrUpdate(Game game){
+    public Game saveOrUpdate(Game game) {
         return gameRepository.save(game);
     }
 
-    public void delete(Long universeId){
+    public void delete(Long universeId) {
         gameRepository.deleteById(universeId);
     }
 
@@ -62,52 +65,61 @@ public class GameService {
         return gameRepository.findGamesToSync(cutoff, PageRequest.of(0, limit));
     }
 
+    public double calculateMonthlyRevenue(Long playing) {
+        return playing != null ? playing * 4.5 * 30 : 0.0;
+    }
+
+    public int calculateEstimatedPlaytime(Long ccu, Long visits) {
+        return 20;
+    }
+
     public XRayDetailsDto getXRayDetails(Game game) {
         List<DailyAnalyticsProjection> dailyData = gameSnapshotRepository.getDailyAnalytics(game.getUniverseId());
 
         List<XRayDetailsDto.DailyMetricDto> metrics = new ArrayList<>();
         Long previousMaxVisits = null;
+        java.time.LocalDate previousDate = null;
+        int avgPlaytime = calculateEstimatedPlaytime(game.getPlaying(), game.getVisits());
 
         for (DailyAnalyticsProjection dayPoint : dailyData) {
             long dailyVisits = 0;
             if (previousMaxVisits != null) {
-                dailyVisits = Math.max(0, dayPoint.getMaxVisits() - previousMaxVisits);
+                long delta = Math.max(0, dayPoint.getMaxVisits() - previousMaxVisits);
+                long daysGap = (previousDate != null)
+                        ? Math.max(1, java.time.temporal.ChronoUnit.DAYS.between(previousDate, dayPoint.getDate()))
+                        : 1;
+                dailyVisits = delta / daysGap;
             } else {
                 dailyVisits = 0;
             }
             previousMaxVisits = dayPoint.getMaxVisits();
+            previousDate = dayPoint.getDate();
 
             String formattedDay = dayPoint.getDate().getMonthValue() + "-" + dayPoint.getDate().getDayOfMonth();
 
             long avgCcu = dayPoint.getAveragePlaying() != null ? dayPoint.getAveragePlaying() : 0L;
-            int playtime = 15 + (int)(game.getUniverseId() % 15);
             double dailyRevenue = avgCcu * 0.15;
 
             metrics.add(new XRayDetailsDto.DailyMetricDto(
-                formattedDay,
-                avgCcu,
-                dailyVisits,
-                playtime,
-                dailyRevenue
-            ));
+                    formattedDay,
+                    avgCcu,
+                    dailyVisits,
+                    avgPlaytime,
+                    dailyRevenue));
         }
 
-
-
-        double monthlyRevenue = game.getPlaying() * 4.5 * 30;
-        int avgPlaytime = 15 + (int)(game.getUniverseId() % 15);
+        double monthlyRevenue = calculateMonthlyRevenue(game.getPlaying());
 
         return new XRayDetailsDto(
-            game.getUniverseId(),
-            game.getGameName(),
-            game.getCreatorName(),
-            game.getVisits(),
-            game.getPlaying(),
-            monthlyRevenue,
-            avgPlaytime,
-            game.getRating(),
-            metrics
-        );
+                game.getUniverseId(),
+                game.getGameName(),
+                game.getCreatorName(),
+                game.getVisits(),
+                game.getPlaying(),
+                monthlyRevenue,
+                avgPlaytime,
+                game.getRating(),
+                metrics);
     }
 
     @Transactional
@@ -151,13 +163,55 @@ public class GameService {
 
     @Transactional
     public List<Game> syncGames(List<Long> universeIds) {
+        if (universeIds == null || universeIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         List<Game> syncedGames = new ArrayList<>();
-        for (Long id : universeIds) {
-            Game game = syncGame(id);
-            if (game != null) {
-                syncedGames.add(game);
+        int batchSize = 100;
+
+        for (int i = 0; i < universeIds.size(); i += batchSize) {
+            List<Long> subList = universeIds.subList(i, Math.min(i + batchSize, universeIds.size()));
+            List<RobloxGameDataDto> dtos = robloxApiService.fetchGamesBatch(subList);
+
+            List<Game> gamesToSave = new ArrayList<>();
+            List<GameSnapshot> snapshotsToSave = new ArrayList<>();
+
+            for (RobloxGameDataDto dto : dtos) {
+                Game game = gameRepository.findById(dto.universeId()).orElse(new Game());
+                game.setUniverseId(dto.universeId());
+                game.setGameName(dto.gameName());
+                game.setDescription(dto.description());
+                game.setVisits(dto.visits());
+                game.setPlaying(dto.playing());
+                game.setLikes(dto.likes());
+                game.setDislikes(dto.dislikes());
+                game.setCreatorName(dto.creatorName());
+                game.setCreatorId(dto.creatorId());
+                game.setRobloxCreatedAt(dto.robloxCreatedAt());
+                game.setRobloxUpdatedAt(dto.robloxUpdatedAt());
+                game.setLastSyncedAt(Instant.now());
+
+                double totalVotes = dto.likes() + dto.dislikes();
+                Double rating = totalVotes > 0 ? (dto.likes() * 100.0) / totalVotes : 0.0;
+                game.setRating(rating);
+
+                gamesToSave.add(game);
+
+                GameSnapshot snapshot = new GameSnapshot();
+                snapshot.setGame(game);
+                snapshot.setPlaying(dto.playing());
+                snapshot.setVisits(dto.visits());
+                snapshotsToSave.add(snapshot);
+            }
+
+            if (!gamesToSave.isEmpty()) {
+                List<Game> saved = gameRepository.saveAll(gamesToSave);
+                gameSnapshotRepository.saveAll(snapshotsToSave);
+                syncedGames.addAll(saved);
             }
         }
+
         return syncedGames;
     }
 }
