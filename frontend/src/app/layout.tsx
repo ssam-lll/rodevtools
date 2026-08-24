@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, JetBrains_Mono } from "next/font/google";
-import Navbar from "@/components/Navbar";
+import Sidebar from "@/components/Sidebar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +14,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RoDevTools - Roblox Analytics",
-  description: "Technical analytics and developer insights for Roblox creators.",
+  title: "RoDevTools - Roblox Game Analytics & DevEx Tools",
+  description: "Real-time analytics, trending games, side-by-side comparisons, and DevEx calculations for Roblox creators.",
 };
 
 export default function RootLayout({
@@ -25,11 +25,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${jetbrainsMono.variable}`}>
-      <body className="bg-zinc-950 text-zinc-50 flex flex-col min-h-screen antialiased">
-        <Navbar />
-        <main className="flex-1 flex flex-col">
+      <body className="bg-background text-foreground min-h-screen antialiased flex flex-col md:flex-row">
+        <Sidebar />
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
           {children}
-        </main>
+        </div>
       </body>
     </html>
   );

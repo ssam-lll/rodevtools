@@ -77,15 +77,15 @@ function NumericFilterPopover({
   };
 
   return (
-    <div className="flex flex-col gap-sm p-xs min-w-[240px]">
-      <div className="flex items-center gap-sm">
+    <div className="flex flex-col gap-3 p-3 min-w-[240px]">
+      <div className="flex items-center gap-2">
         <input
           type="number"
           placeholder="Min"
           value={min}
           onChange={(e) => setMin(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleApply()}
-          className="w-full px-sm py-xs rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40"
+          className="w-full px-3 py-1.5 rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40 font-mono"
         />
         <span className="text-on-surface-variant text-xs font-semibold">—</span>
         <input
@@ -94,19 +94,19 @@ function NumericFilterPopover({
           value={max}
           onChange={(e) => setMax(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleApply()}
-          className="w-full px-sm py-xs rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40"
+          className="w-full px-3 py-1.5 rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40 font-mono"
         />
       </div>
-      <div className="flex gap-sm justify-between mt-sm">
+      <div className="flex gap-2 justify-between mt-2">
         <button
           onClick={handleClear}
-          className="flex-1 px-sm py-1.5 rounded-lg border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/10 transition-all text-center cursor-pointer"
+          className="flex-1 px-3 py-1.5 rounded-lg border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/10 transition-all text-center cursor-pointer"
         >
           Clear
         </button>
         <button
           onClick={handleApply}
-          className="flex-1 px-sm py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container transition-all text-center cursor-pointer"
+          className="flex-1 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container transition-all text-center cursor-pointer"
         >
           Apply
         </button>
@@ -142,7 +142,7 @@ function TextFilterPopover({
   };
 
   return (
-    <div className="flex flex-col gap-sm p-xs min-w-[200px]">
+    <div className="flex flex-col gap-3 p-3 min-w-[200px]">
       <input
         type="text"
         placeholder={`Search ${columnLabel}...`}
@@ -150,18 +150,18 @@ function TextFilterPopover({
         onChange={(e) => setVal(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleApply()}
         autoFocus
-        className="w-full px-sm py-xs rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40"
+        className="w-full px-3 py-1.5 rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40"
       />
-      <div className="flex gap-sm justify-between mt-sm">
+      <div className="flex gap-2 justify-between mt-2">
         <button
           onClick={handleClear}
-          className="flex-1 px-sm py-1.5 rounded-lg border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/10 transition-all text-center cursor-pointer"
+          className="flex-1 px-3 py-1.5 rounded-lg border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/10 transition-all text-center cursor-pointer"
         >
           Clear
         </button>
         <button
           onClick={handleApply}
-          className="flex-1 px-sm py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container transition-all text-center cursor-pointer"
+          className="flex-1 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container transition-all text-center cursor-pointer"
         >
           Apply
         </button>
@@ -297,7 +297,7 @@ export default function SortableTable<T>({
     <div className="w-full overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container-lowest/40 backdrop-blur-sm">
       {/* Active filters bar */}
       {activeFilterCount > 0 && (
-        <div className="flex items-center gap-sm px-md py-sm border-b border-outline-variant/30 bg-surface-container/30">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/30 bg-surface-container/30">
           <Filter className="w-3.5 h-3.5 text-primary" />
           <span className="text-body-sm text-on-surface-variant">Active filters:</span>
           {Object.entries(filters).map(([key, value]) => {
@@ -318,7 +318,7 @@ export default function SortableTable<T>({
             return (
               <span
                 key={key}
-                className="inline-flex items-center gap-xs px-sm py-xs rounded-md bg-primary/10 text-primary text-xs font-semibold"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold"
               >
                 {col?.label}: {displayValue}
                 <button onClick={() => clearFilter(key)} className="hover:text-error transition-colors cursor-pointer">
@@ -343,13 +343,13 @@ export default function SortableTable<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`p-md text-label-caps text-on-surface-variant font-semibold select-none relative ${
+                  className={`px-4 py-3.5 text-label-caps text-on-surface-variant font-semibold select-none relative ${
                     col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"
                   } ${col.sortable ? "cursor-pointer hover:text-primary group/th transition-colors" : ""}`}
                   style={col.width ? { width: col.width } : undefined}
                   onClick={col.sortable ? () => handleSort(col.key) : undefined}
                 >
-                  <div className={`flex items-center gap-xs ${col.align === "right" ? "justify-end" : col.align === "center" ? "justify-center" : ""}`}>
+                  <div className={`flex items-center gap-1.5 ${col.align === "right" ? "justify-end" : col.align === "center" ? "justify-center" : ""}`}>
                     <span>{col.label}</span>
                     {col.sortable && (
                       <span className="inline-flex flex-col">
@@ -370,7 +370,7 @@ export default function SortableTable<T>({
                           e.stopPropagation();
                           setActiveFilter(activeFilter === col.key ? null : col.key);
                         }}
-                        className={`p-0.5 rounded hover:bg-primary/10 transition-colors ${
+                        className={`p-1 rounded hover:bg-primary/10 transition-colors ${
                           filters[col.key] ? "text-primary" : "text-on-surface-variant/40 hover:text-on-surface-variant"
                         }`}
                       >
@@ -389,7 +389,7 @@ export default function SortableTable<T>({
                         }}
                       />
                       <div 
-                        className="absolute right-0 mt-xs p-md rounded-xl border border-outline bg-surface-container shadow-2xl z-50 text-left cursor-default font-normal normal-case tracking-normal"
+                        className="absolute right-0 mt-2 p-4 rounded-xl border border-outline bg-surface-container shadow-2xl z-50 text-left cursor-default font-normal normal-case tracking-normal"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {col.isNumeric ? (
@@ -419,8 +419,8 @@ export default function SortableTable<T>({
           <tbody className="divide-y divide-outline-variant/30">
             {loading ? (
               <tr>
-                <td colSpan={columns.length} className="p-xl text-center text-body-md text-on-surface-variant font-mono">
-                  <div className="flex items-center justify-center gap-sm">
+                <td colSpan={columns.length} className="py-12 px-4 text-center text-body-md text-on-surface-variant font-mono">
+                  <div className="flex items-center justify-center gap-3">
                     <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                     <span>{loadingMessage}</span>
                   </div>
@@ -438,7 +438,7 @@ export default function SortableTable<T>({
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={`p-md ${
+                      className={`px-4 py-3.5 ${
                         col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : ""
                       }`}
                     >
@@ -449,7 +449,7 @@ export default function SortableTable<T>({
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length} className="p-xl text-center text-body-md text-on-surface-variant">
+                <td colSpan={columns.length} className="py-12 px-4 text-center text-body-md text-on-surface-variant">
                   {emptyMessage}
                 </td>
               </tr>
@@ -460,18 +460,18 @@ export default function SortableTable<T>({
 
       {/* Pagination Controls */}
       {hasPagination && (
-        <div className="flex items-center justify-between px-md py-sm border-t border-outline-variant/30 bg-surface-container/30">
+        <div className="flex items-center justify-between px-4 py-3.5 border-t border-outline-variant/30 bg-surface-container/30">
           <span className="text-xs text-on-surface-variant font-mono">
             {totalElements !== undefined
               ? `${(currentPage! * (pageSize || 20)) + 1}–${Math.min((currentPage! + 1) * (pageSize || 20), totalElements)} of ${totalElements.toLocaleString()}`
               : `Page ${(currentPage || 0) + 1} of ${totalPages}`
             }
           </span>
-          <div className="flex items-center gap-xs">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => onPageChange!(currentPage! - 1)}
               disabled={currentPage === 0}
-              className="px-sm py-1 rounded-md text-xs font-semibold border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-md text-xs font-semibold border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               ← Previous
             </button>
@@ -487,7 +487,7 @@ export default function SortableTable<T>({
                   onClick={() => onPageChange!(p)}
                   className={`w-8 h-8 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                     p === currentPage
-                      ? "bg-primary text-on-primary shadow-[0_0_10px_rgba(0,175,244,0.3)]"
+                      ? "bg-primary text-on-primary shadow-sm"
                       : "border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30"
                   }`}
                 >
@@ -498,7 +498,7 @@ export default function SortableTable<T>({
             <button
               onClick={() => onPageChange!(currentPage! + 1)}
               disabled={currentPage === totalPages! - 1}
-              className="px-sm py-1 rounded-md text-xs font-semibold border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-md text-xs font-semibold border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               Next →
             </button>

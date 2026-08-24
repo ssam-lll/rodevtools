@@ -1,7 +1,23 @@
 "use client";
 
 import React, { useState } from "react";
-import { DollarSign, Calculator, AlertTriangle, CheckCircle, Info, ArrowLeftRight, CreditCard, Building2, FileText, Landmark, Crown, ToggleLeft, ToggleRight, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { 
+  Calculator, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Info, 
+  ArrowLeftRight, 
+  CreditCard, 
+  Building2, 
+  FileText, 
+  Landmark, 
+  Crown, 
+  ToggleLeft, 
+  ToggleRight, 
+  ArrowUpRight, 
+  ArrowDownLeft,
+  DollarSign
+} from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 // Cashout method definitions with fee metadata
@@ -10,7 +26,7 @@ const CASHOUT_METHODS = [
     id: "paypal",
     name: "PayPal",
     icon: CreditCard,
-    feeText: "2% fee (max. $20.00 USD)",
+    feeText: "2% fee (max. $20 USD)",
     processingTime: "3-5 business days",
     minAmount: "$100 USD",
     description: "Fastest option for most developers. Sent directly to your PayPal account.",
@@ -22,16 +38,7 @@ const CASHOUT_METHODS = [
     feeText: "$25.00 USD flat fee",
     processingTime: "5-10 business days",
     minAmount: "$1,000 USD",
-    description: "Best for large payouts. Wire transfer sent directly to your bank account.",
-  },
-  {
-    id: "check",
-    name: "Check",
-    icon: FileText,
-    feeText: "$3.00 USD handling fee",
-    processingTime: "10-20 business days",
-    minAmount: "$100 USD",
-    description: "Physical paper check mailed to your address.",
+    description: "Best for high-volume payouts. Wire transfer sent directly to your bank account.",
   },
   {
     id: "tipalti",
@@ -40,7 +47,16 @@ const CASHOUT_METHODS = [
     feeText: "$1.50 USD transaction fee",
     processingTime: "3-7 business days",
     minAmount: "$100 USD",
-    description: "Electronic check via the Tipalti system directly to your bank account.",
+    description: "Electronic direct check via the Tipalti payment portal into your bank account.",
+  },
+  {
+    id: "check",
+    name: "Physical Check",
+    icon: FileText,
+    feeText: "$3.00 USD handling fee",
+    processingTime: "10-20 business days",
+    minAmount: "$100 USD",
+    description: "Physical paper check mailed to your registered postal address.",
   },
 ];
 
@@ -61,7 +77,7 @@ export default function DevExPage() {
   const DEVEX_RATE = 0.0035;
   const MIN_ELIGIBLE_ROBUX = 30000;
   const BUYING_RATE = 0.0125;
-  const TAX_RATE = 30; // Locked at 30% as requested
+  const TAX_RATE = 30; // 30% US withholding tax baseline
 
   // Dynamic Payout Fee Calculation
   const getMethodFee = (methodId: string, amountUsd: number) => {
@@ -80,7 +96,6 @@ export default function DevExPage() {
     }
   };
 
-  // Helper functions for formatting numbers with commas in inputs
   const formatInputNumber = (val: string) => {
     if (!val) return "";
     const clean = val.replace(/[^\d.]/g, "");
@@ -138,7 +153,7 @@ export default function DevExPage() {
 
   // Transfer Calculations
   const transferAmount = parseFloat(transferRobux) || 0;
-  const marketplaceFeeRate = hasPremium ? 10 : 30; // Reduced from 30% to 10% with Premium
+  const marketplaceFeeRate = hasPremium ? 10 : 30;
 
   let p2pSentAmount = 0;
   let p2pTaxAmount = 0;
@@ -177,115 +192,112 @@ export default function DevExPage() {
   const activeMethod = CASHOUT_METHODS.find((m) => m.id === selectedMethod) || CASHOUT_METHODS[0];
 
   return (
-    <main className="relative flex-1 bg-background text-foreground py-xl px-gutter overflow-hidden">
-      {/* Background Radial Glow */}
-      <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
-
-      <div className="container-max z-10 relative">
+    <main className="relative flex-1 bg-background text-foreground p-6 md:p-8">
+      <div className="container-max z-10">
+        
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-md mb-lg border-b border-outline-variant/30 pb-lg">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-outline-variant/30 pb-6">
           <div>
-            <div className="flex items-center gap-xs text-primary mb-xs">
-              <Calculator className="w-5 h-5" />
-              <span className="text-label-caps font-semibold">Financial Analytics</span>
-            </div>
-            <h1 className="text-headline-lg font-bold">DevEx & Fee Calculator</h1>
-            <p className="text-body-md text-on-surface-variant mt-xs">
-              Calculate Roblox Developer Exchange (DevEx) payouts, transaction fees, and Robux transfer taxes.
+            <h1 className="text-2xl font-bold tracking-tight text-foreground font-sans">Calculator</h1>
+            <p className="text-body-sm text-on-surface-variant mt-1">
+              Calculate DevEx payouts, payment method fees, and Robux transaction taxes.
             </p>
           </div>
-        </div>
 
-        {/* Tab Selection Switcher */}
-        <div className="flex gap-xs p-1 bg-surface-container-lowest/60 border border-outline-variant/30 rounded-xl w-fit mb-lg">
-          <button
-            onClick={() => setActiveTab("devex")}
-            className={`px-md py-sm rounded-lg text-body-sm font-semibold transition-all duration-200 cursor-pointer flex items-center gap-xs ${
-              activeTab === "devex"
-                ? "bg-primary/10 text-primary border border-primary/20 shadow-[0_0_10px_rgba(0,175,244,0.08)]"
-                : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high/30 border border-transparent"
-            }`}
-          >
-            <DollarSign className="w-4 h-4" />
-            DevEx Calculator
-          </button>
-          <button
-            onClick={() => setActiveTab("transfer")}
-            className={`px-md py-sm rounded-lg text-body-sm font-semibold transition-all duration-200 cursor-pointer flex items-center gap-xs ${
-              activeTab === "transfer"
-                ? "bg-primary/10 text-primary border border-primary/20 shadow-[0_0_10px_rgba(0,175,244,0.08)]"
-                : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high/30 border border-transparent"
-            }`}
-          >
-            <ArrowLeftRight className="w-4 h-4" />
-            Robux Transfer Tax
-          </button>
+          {/* Mode Tabs */}
+          <div className="flex items-center gap-1 p-1 bg-surface-container border border-outline-variant rounded-lg self-start md:self-auto">
+            <button
+              onClick={() => setActiveTab("devex")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "devex"
+                  ? "bg-surface-container-highest text-foreground border border-outline/50 shadow-sm"
+                  : "text-on-surface-variant hover:text-foreground border border-transparent"
+              }`}
+            >
+              <DollarSign className="w-3.5 h-3.5" />
+              <span>DevEx Cashout</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("transfer")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "transfer"
+                  ? "bg-surface-container-highest text-foreground border border-outline/50 shadow-sm"
+                  : "text-on-surface-variant hover:text-foreground border border-transparent"
+              }`}
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5" />
+              <span>Transfer Tax (30% / 10%)</span>
+            </button>
+          </div>
         </div>
 
         {/* Tab 1: DevEx Calculator */}
         {activeTab === "devex" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg animate-fade-in">
-            {/* Left Column: Inputs, Presets, Methods */}
-            <div className="lg:col-span-2 space-y-lg">
-              {/* Exchange Parameters */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
+            
+            {/* Left Column (Inputs & Payout Method) - 7 cols */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Conversion Inputs */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-body-md font-bold">Exchange Parameters</CardTitle>
-                  <CardDescription>Enter values in either Robux or USD to compute the conversion.</CardDescription>
+                  <CardTitle className="text-base font-bold">DevEx Conversion</CardTitle>
+                  <CardDescription>Enter Robux or USD to calculate based on the current official rate ($0.0035/R$).</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-md">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-md items-center">
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                    
                     {/* Robux Input */}
-                    <div className="space-y-xs">
-                      <label className="text-label-caps text-on-surface-variant font-semibold">Robux Amount</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Robux Amount</label>
                       <div className="relative">
                         <input
                           type="text"
-                          placeholder="e.g. 100,000"
+                          placeholder="100,000"
                           value={formatInputNumber(robux)}
                           onChange={(e) => handleRobuxChange(e.target.value)}
-                          className="w-full pl-md pr-16 py-sm rounded-lg bg-surface-container/60 border border-outline-variant focus:border-primary focus:outline-none text-data-lg font-mono transition-all"
+                          className="w-full pl-3 pr-12 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high focus:bg-surface-container-high border border-outline-variant focus:border-zinc-500 focus:outline-none text-base font-mono transition-all font-semibold"
                         />
-                        <span className="absolute inset-y-0 right-0 pr-md flex items-center text-body-sm font-semibold text-primary pointer-events-none font-mono">
+                        <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-bold text-foreground pointer-events-none font-mono">
                           R$
                         </span>
                       </div>
                     </div>
 
-                    {/* Icon Separator */}
-                    <div className="hidden md:flex justify-center mt-md text-on-surface-variant">
-                      <ArrowLeftRight className="w-5 h-5" />
-                    </div>
-
-                    {/* USD Input */}
-                    <div className="space-y-xs">
-                      <label className="text-label-caps text-on-surface-variant font-semibold">Equivalent USD</label>
+                    {/* USD Equivalent Input */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Gross USD</label>
                       <div className="relative">
                         <input
                           type="text"
-                          placeholder="e.g. 350"
+                          placeholder="350.00"
                           value={formatInputNumber(usd)}
                           onChange={(e) => handleUsdChange(e.target.value)}
-                          className="w-full pl-10 pr-md py-sm rounded-lg bg-surface-container/60 border border-outline-variant focus:border-primary focus:outline-none text-data-lg font-mono transition-all"
+                          className="w-full pl-8 pr-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high focus:bg-surface-container-high border border-outline-variant focus:border-zinc-500 focus:outline-none text-base font-mono transition-all font-semibold"
                         />
-                        <span className="absolute inset-y-0 left-0 pl-md flex items-center text-body-sm font-semibold text-amber-400 pointer-events-none font-mono">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-bold text-on-surface-variant pointer-events-none font-mono">
                           $
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Presets List */}
-                  <div className="pt-md border-t border-outline-variant/30">
-                    <span className="text-body-sm text-on-surface-variant block mb-sm">Quick presets (Robux):</span>
-                    <div className="flex flex-wrap gap-sm">
-                      {[30000, 100000, 250000, 1000000, 5000000, 10000000].map((val) => (
+                  {/* Preset Buttons */}
+                  <div className="pt-2">
+                    <span className="text-xs text-on-surface-variant block mb-2 font-medium">Quick Presets:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {[30000, 100000, 250000, 500000, 1000000, 5000000, 10000000].map((val) => (
                         <button
                           key={val}
+                          type="button"
                           onClick={() => applyPreset(val)}
-                          className="px-md py-xs rounded bg-surface-container-high/60 hover:bg-surface-container-highest hover:border-primary border border-outline-variant text-body-sm font-mono transition-all cursor-pointer"
+                          className={`px-2.5 py-1 rounded text-xs font-mono transition-all cursor-pointer border ${
+                            currentRobux === val
+                              ? "bg-foreground text-background font-bold border-foreground"
+                              : "bg-surface-container hover:bg-surface-container-high border-outline-variant text-on-surface-variant hover:text-foreground"
+                          }`}
                         >
-                          {formatNumber(val)} R$
+                          {val === 30000 ? "30K (Min)" : `${formatNumber(val / 1000)}K`} R$
                         </button>
                       ))}
                     </div>
@@ -296,285 +308,246 @@ export default function DevExPage() {
               {/* Cashout Method Selector */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-body-md font-bold">Payout Method</CardTitle>
-                  <CardDescription>Choose how you want to receive your DevEx payout to calculate transaction fees.</CardDescription>
+                  <CardTitle className="text-base font-bold">Payout Method & Fees</CardTitle>
+                  <CardDescription>Select your payout channel to factor in processing fees.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-md">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-sm">
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {CASHOUT_METHODS.map((method) => {
                       const Icon = method.icon;
                       const isActive = selectedMethod === method.id;
                       return (
                         <button
                           key={method.id}
+                          type="button"
                           onClick={() => setSelectedMethod(method.id)}
-                          className={`flex flex-col items-center gap-xs p-md rounded-lg border transition-all text-center cursor-pointer ${
+                          className={`flex flex-col items-start p-3 rounded-lg border transition-all text-left cursor-pointer ${
                             isActive
-                              ? "bg-primary/10 border-primary/40 text-primary shadow-[0_0_12px_rgba(0,175,244,0.1)]"
-                              : "bg-surface-container/40 border-outline-variant/40 text-on-surface-variant hover:border-outline-variant hover:bg-surface-container"
+                              ? "bg-surface-container-highest border-outline text-foreground shadow-sm"
+                              : "bg-surface-container border-outline-variant text-on-surface-variant hover:border-outline hover:bg-surface-container-high"
                           }`}
                         >
-                          <Icon className={`w-5 h-5 ${isActive ? "text-primary" : ""}`} />
-                          <span className="text-xs font-semibold">{method.name}</span>
+                          <div className="flex items-center justify-between w-full mb-2">
+                            <Icon className={`w-4 h-4 ${isActive ? "text-foreground" : "text-on-surface-variant"}`} />
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-surface-container-high">
+                              {method.name === "PayPal" ? "2%" : method.name === "Wire Transfer" ? "$25" : method.name === "Physical Check" ? "$3" : "$1.50"}
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-foreground block">{method.name}</span>
+                          <span className="text-[10px] text-on-surface-variant mt-0.5 leading-tight line-clamp-1">{method.processingTime}</span>
                         </button>
                       );
                     })}
                   </div>
 
-                  {/* Selected Method Details */}
-                  <div className="p-md rounded-lg bg-surface-container/30 border border-outline-variant/30 space-y-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-xs">
-                        {React.createElement(activeMethod.icon, { className: "w-4 h-4 text-primary" })}
-                        <span className="text-body-sm font-bold text-foreground">{activeMethod.name}</span>
+                  {/* Method Summary details */}
+                  <div className="p-3.5 rounded-lg bg-surface-container border border-outline-variant flex flex-col sm:flex-row justify-between gap-3 text-xs">
+                    <div className="space-y-1">
+                      <div className="font-semibold text-foreground flex items-center gap-1.5">
+                        <activeMethod.icon className="w-3.5 h-3.5 text-foreground" />
+                        <span>{activeMethod.name} Details</span>
                       </div>
-                      <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary font-bold font-mono">
-                        {activeMethod.feeText}
-                      </span>
+                      <p className="text-on-surface-variant leading-relaxed text-[11px]">{activeMethod.description}</p>
                     </div>
-                    <p className="text-body-sm text-on-surface-variant">{activeMethod.description}</p>
-                    <div className="grid grid-cols-3 gap-sm pt-sm border-t border-outline-variant/20">
-                      <div>
-                        <span className="text-[10px] text-on-surface-variant block uppercase tracking-wider font-semibold">Fee Rate</span>
-                        <span className="text-xs font-semibold text-foreground">{activeMethod.feeText}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-on-surface-variant block uppercase tracking-wider font-semibold">Processing</span>
-                        <span className="text-xs font-semibold text-foreground">{activeMethod.processingTime}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-on-surface-variant block uppercase tracking-wider font-semibold">Minimum</span>
-                        <span className="text-xs font-semibold text-foreground">{activeMethod.minAmount}</span>
-                      </div>
+                    <div className="flex sm:flex-col justify-between sm:justify-center items-end shrink-0 text-[11px] border-t sm:border-t-0 sm:border-l border-outline-variant/40 pt-2 sm:pt-0 sm:pl-4">
+                      <span className="text-on-surface-variant">Fee: <strong className="text-foreground font-mono">{activeMethod.feeText}</strong></span>
+                      <span className="text-on-surface-variant">Min: <strong className="text-foreground font-mono">{activeMethod.minAmount}</strong></span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Platform Comparison */}
+              {/* Economic Spread Context */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-body-md font-bold">Platform Economic Spread</CardTitle>
-                  <CardDescription>Comparison of what this Robux costs to buy vs. what it pays out.</CardDescription>
+                  <CardTitle className="text-base font-bold">Roblox vs. Developer Revenue Share</CardTitle>
+                  <CardDescription>Comparison of commercial Robux purchase cost vs. DevEx developer cashout.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-md">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-                    <div className="p-md rounded-lg bg-surface-container-high/30 border border-outline-variant/40">
-                      <span className="text-body-sm text-on-surface-variant block mb-xs">Robux Purchase Cost (Est.)</span>
-                      <span className="text-headline-sm font-bold font-mono text-red-400">{formatCurrency(currentRobux * BUYING_RATE)}</span>
-                      <p className="text-[11px] text-on-surface-variant mt-xs">Cost at commercial purchase rate ($0.0125/R$)</p>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-surface-container/30 border border-outline-variant/30">
+                      <span className="text-[11px] text-on-surface-variant block mb-1">Commercial Purchase Cost ($0.0125/R$)</span>
+                      <span className="text-base font-bold text-foreground font-mono">{formatCurrency(currentRobux * BUYING_RATE)}</span>
                     </div>
-                    <div className="p-md rounded-lg bg-surface-container-high/30 border border-outline-variant/40">
-                      <span className="text-body-sm text-on-surface-variant block mb-xs">Your Cashout Share (DevEx)</span>
-                      <span className="text-headline-sm font-bold font-mono text-emerald-400">{formatCurrency(currentUsd)}</span>
-                      <p className="text-[11px] text-on-surface-variant mt-xs">Value paid out at exchange rate ($0.0035/R$)</p>
+                    <div className="p-3 rounded-lg bg-surface-container/30 border border-outline-variant/30">
+                      <span className="text-[11px] text-on-surface-variant block mb-1">Developer DevEx Share ($0.0035/R$)</span>
+                      <span className="text-base font-bold text-primary font-mono">{formatCurrency(currentUsd)}</span>
                     </div>
                   </div>
-
-                  <div className="p-md rounded-lg bg-primary/5 border border-primary/20 flex gap-sm items-start">
-                    <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                    <div className="text-body-sm text-on-surface-variant">
-                      Roblox retains a spread of <strong className="text-foreground font-mono">{formatCurrency(platformSpread)}</strong> (approx. 72%) to cover global cloud hosting, multiplayer infrastructure, app store fees, platform moderation, and operational costs.
-                    </div>
+                  <div className="p-3 rounded-lg bg-surface-container/30 border border-outline-variant/20 flex gap-2 items-start text-xs text-on-surface-variant leading-relaxed">
+                    <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <span>
+                      Roblox retains approximately <strong>72% ({formatCurrency(platformSpread)})</strong> to cover multiplayer hosting, client distribution, payment gateway fees, and moderation.
+                    </span>
                   </div>
                 </CardContent>
               </Card>
+
             </div>
 
-            {/* Right Column: Payout Summary & Eligibility */}
-            <div className="space-y-lg">
-              {/* Eligibility Widget */}
-              <Card className={`border-l-4 ${isEligible ? "border-l-emerald-500 bg-emerald-500/5" : "border-l-amber-500 bg-amber-500/5"}`}>
-                <CardHeader className="pb-xs">
-                  <CardTitle className="text-body-sm font-bold flex items-center gap-xs">
-                    {isEligible ? (
-                      <>
-                        <CheckCircle className="w-5 h-5 text-emerald-400" />
-                        <span className="text-emerald-400">Eligible for Cashout</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertTriangle className="w-5 h-5 text-amber-400" />
-                        <span className="text-amber-400">Below Cashout Threshold</span>
-                      </>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-sm">
-                  <p className="text-body-sm text-on-surface-variant leading-relaxed">
-                    Roblox requires a minimum threshold of <strong className="text-foreground font-mono">{formatNumber(MIN_ELIGIBLE_ROBUX)} Robux</strong> to be eligible for a Developer Exchange transaction.
-                  </p>
-                  {!isEligible && (
-                    <div className="text-xs bg-amber-500/10 text-amber-400 p-sm rounded border border-amber-500/20 font-semibold font-mono">
-                      You need {formatNumber(MIN_ELIGIBLE_ROBUX - currentRobux)} more Robux to meet the DevEx requirements.
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            {/* Right Column (Receipt & Payout Summary) - 5 cols */}
+            <div className="lg:col-span-5 space-y-6">
+              
+              {/* Below minimum threshold warning if applicable */}
+              {!isEligible && (
+                <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 text-amber-400 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>
+                    Minimum DevEx threshold is <strong>{formatNumber(MIN_ELIGIBLE_ROBUX)} R$</strong> (${(MIN_ELIGIBLE_ROBUX * DEVEX_RATE).toFixed(2)} USD).
+                  </span>
+                </div>
+              )}
 
-              {/* Financial Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-body-md font-bold">Estimated Net Earnings</CardTitle>
-                  <CardDescription>Estimation of taxes and net payouts after transaction fees.</CardDescription>
+              {/* Net Payout Summary Card */}
+              <Card className="border-outline-variant/60 shadow-md">
+                <CardHeader className="pb-3 border-b border-outline-variant/30">
+                  <CardTitle className="text-base font-bold">Payout Summary</CardTitle>
+                  <CardDescription>Estimated payout after taxes and processing fees.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-md">
-                  {/* Tax withholding locked information */}
-                  <div className="flex justify-between items-center p-sm rounded-lg bg-surface-container/30 border border-outline-variant/30">
-                    <span className="text-body-sm font-medium text-foreground">Withholding Tax Rate</span>
-                    <span className="font-mono text-xs font-bold text-red-400 bg-red-400/10 border border-red-400/20 px-2 py-0.5 rounded">
-                      {TAX_RATE}% Fixed
+                <CardContent className="space-y-5 pt-4">
+                  
+                  {/* Big Hero Value */}
+                  <div className="p-4 rounded-xl bg-surface-container border border-outline-variant/40 text-center">
+                    <span className="text-xs text-on-surface-variant uppercase tracking-wider block mb-1">Estimated Take-Home (USD)</span>
+                    <div className="text-3xl font-bold font-mono text-emerald-400">
+                      {formatCurrency(netEarnings)}
+                    </div>
+                    <span className="text-[11px] text-on-surface-variant/80 mt-1 block">
+                      From {formatNumber(currentRobux)} Robux gross conversion
                     </span>
                   </div>
 
-                  {/* Visual breakdown progress bar */}
-                  <div className="space-y-xs pt-xs">
-                    <div className="flex h-2.5 rounded-full overflow-hidden bg-surface-container-highest">
+                  {/* Distribution Progress Bar */}
+                  <div className="space-y-1.5">
+                    <div className="flex h-2 rounded-full overflow-hidden bg-surface-container-highest">
                       <div 
                         className="bg-emerald-400 h-full transition-all duration-300" 
                         style={{ width: `${currentUsd > 0 ? (netEarnings / currentUsd) * 100 : 100}%` }}
+                        title="Net Payout"
                       />
                       <div 
                         className="bg-red-400 h-full transition-all duration-300" 
                         style={{ width: `${currentUsd > 0 ? (estimatedTax / currentUsd) * 100 : 0}%` }}
+                        title="Withholding Tax"
                       />
                       <div 
                         className="bg-amber-400 h-full transition-all duration-300" 
                         style={{ width: `${currentUsd > 0 ? (paymentMethodFee / currentUsd) * 100 : 0}%` }}
+                        title="Method Fee"
                       />
                     </div>
                     <div className="flex justify-between text-[10px] text-on-surface-variant font-mono">
-                      <span className="flex items-center gap-xs">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
                         Net ({currentUsd > 0 ? Math.round((netEarnings / currentUsd) * 100) : 100}%)
                       </span>
-                      <span className="flex items-center gap-xs">
-                        <span className="w-2 h-2 rounded-full bg-red-400 inline-block" />
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
                         Tax ({TAX_RATE}%)
                       </span>
                       {paymentMethodFee > 0 && (
-                        <span className="flex items-center gap-xs">
-                          <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                        <span className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
                           Fee ({currentUsd > 0 ? Math.round((paymentMethodFee / currentUsd) * 100) : 0}%)
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Calculation Stack */}
-                  <div className="space-y-sm pt-md border-t border-outline-variant/30 font-mono text-body-sm">
+                  {/* Itemized Calculation List */}
+                  <div className="space-y-2 pt-2 border-t border-outline-variant/30 text-xs">
                     <div className="flex justify-between text-on-surface-variant">
-                      <span>Gross Cashout:</span>
-                      <span className="text-foreground">{formatCurrency(currentUsd)}</span>
+                      <span>Gross DevEx Amount:</span>
+                      <span className="text-foreground font-semibold font-mono">{formatCurrency(currentUsd)}</span>
                     </div>
-                    <div className="flex justify-between text-on-surface-variant">
-                      <span>Tax Withheld ({TAX_RATE}%):</span>
-                      <span className="text-red-400">-{formatCurrency(estimatedTax)}</span>
+                    <div className="flex justify-between text-red-400">
+                      <span>Tax Withheld (Fixed {TAX_RATE}%):</span>
+                      <span className="font-mono">-{formatCurrency(estimatedTax)}</span>
                     </div>
-                    <div className="flex justify-between text-on-surface-variant">
+                    <div className="flex justify-between text-amber-400">
                       <span>{activeMethod.name} Fee:</span>
-                      <span className="text-amber-400">-{formatCurrency(paymentMethodFee)}</span>
+                      <span className="font-mono">-{formatCurrency(paymentMethodFee)}</span>
                     </div>
-                    <div className="flex justify-between text-headline-sm font-bold pt-sm border-t border-dashed border-outline-variant/40">
-                      <span className="font-sans text-foreground">Net Payout:</span>
-                      <span className="text-emerald-400 font-bold">{formatCurrency(netEarnings)}</span>
+                    <div className="flex justify-between text-sm font-bold pt-3 border-t border-dashed border-outline-variant/40 text-foreground">
+                      <span className="font-sans">Final Net Payout:</span>
+                      <span className="text-emerald-400 font-mono">{formatCurrency(netEarnings)}</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Cashout Method Summary Details */}
-              <Card>
-                <CardHeader className="pb-xs">
-                  <CardTitle className="text-body-sm font-bold flex items-center gap-xs">
-                    {React.createElement(activeMethod.icon, { className: "w-4 h-4 text-primary" })}
-                    <span>Payout via {activeMethod.name}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-sm">
-                  <div className="text-body-sm text-on-surface-variant space-y-xs">
-                    <div className="flex justify-between">
-                      <span>Processing time:</span>
-                      <span className="text-foreground font-semibold">{activeMethod.processingTime}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Transaction fee:</span>
-                      <span className="text-foreground font-semibold">{activeMethod.feeText}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Minimum payout:</span>
-                      <span className="text-foreground font-semibold">{activeMethod.minAmount}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
+
           </div>
         )}
 
         {/* Tab 2: Robux Transfer Tax */}
         {activeTab === "transfer" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg animate-fade-in">
-            {/* Left Column: Transfer Input, Premium status */}
-            <div className="lg:col-span-2 space-y-lg">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
+            
+            {/* Left Column: Transfer Controls (7 cols) */}
+            <div className="lg:col-span-7 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-body-md font-bold">Robux Transfer Parameters</CardTitle>
-                  <CardDescription>Configure if you want to calculate based on amount sent or target amount received.</CardDescription>
+                  <CardTitle className="text-base font-bold">Transfer Calculator</CardTitle>
+                  <CardDescription>Calculate transaction fees for direct Robux transfers or item sales.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-md">
-                  {/* Mode Switcher */}
-                  <div className="grid grid-cols-2 gap-sm p-1 bg-surface-container-lowest/60 border border-outline-variant/30 rounded-xl">
+                <CardContent className="space-y-4">
+                  
+                  {/* Mode Selector */}
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-surface-container border border-outline-variant/30 rounded-lg">
                     <button
+                      type="button"
                       onClick={() => setTransferMode("send")}
-                      className={`py-sm rounded-lg text-body-sm font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-xs ${
+                      className={`py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                         transferMode === "send"
-                          ? "bg-primary/10 text-primary border border-primary/20"
+                          ? "bg-surface-container-high text-primary border border-outline-variant/50 shadow-sm"
                           : "text-on-surface-variant hover:text-foreground border border-transparent"
                       }`}
                     >
-                      <ArrowUpRight className="w-4 h-4" />
-                      I Want to Send...
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                      <span>I Want to Send...</span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => setTransferMode("receive")}
-                      className={`py-sm rounded-lg text-body-sm font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-xs ${
+                      className={`py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                         transferMode === "receive"
-                          ? "bg-primary/10 text-primary border border-primary/20"
+                          ? "bg-surface-container-high text-primary border border-outline-variant/50 shadow-sm"
                           : "text-on-surface-variant hover:text-foreground border border-transparent"
                       }`}
                     >
-                      <ArrowDownLeft className="w-4 h-4" />
-                      Recipient Receives...
+                      <ArrowDownLeft className="w-3.5 h-3.5" />
+                      <span>Recipient Receives...</span>
                     </button>
                   </div>
 
-                  {/* Transfer Input */}
-                  <div className="space-y-xs">
-                    <label className="text-label-caps text-on-surface-variant font-semibold">
+                  {/* Transfer Robux Input */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                       {transferMode === "send" ? "Robux to Transfer (Gross)" : "Target Robux to Receive (Net)"}
                     </label>
-                    <div className="relative mb-xs">
+                    <div className="relative">
                       <input
                         type="text"
-                        placeholder="e.g. 10,000"
+                        placeholder="10,000"
                         value={formatInputNumber(transferRobux)}
                         onChange={(e) => handleTransferRobuxChange(e.target.value)}
-                        className="w-full pl-md pr-16 py-sm rounded-lg bg-surface-container/60 border border-outline-variant focus:border-primary focus:outline-none text-data-lg font-mono transition-all"
+                        className="w-full pl-3 pr-12 py-2 rounded-lg bg-surface-container-high/40 border border-outline-variant/50 focus:border-primary focus:outline-none text-base font-mono transition-all font-semibold"
                       />
-                      <span className="absolute inset-y-0 right-0 pr-md flex items-center text-body-sm font-semibold text-primary pointer-events-none font-mono">
+                      <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-bold text-primary pointer-events-none font-mono">
                         R$
                       </span>
                     </div>
 
-                    {/* Presets for transfer */}
-                    <div className="flex flex-wrap gap-xs pt-1">
+                    {/* Presets */}
+                    <div className="flex flex-wrap gap-2 pt-1">
                       {[1000, 5000, 10000, 50000, 100000].map((val) => (
                         <button
                           key={val}
                           type="button"
                           onClick={() => setTransferRobux(val.toString())}
-                          className="px-sm py-xs rounded bg-surface-container-high/60 hover:bg-surface-container-highest hover:border-primary border border-outline-variant text-body-sm font-mono transition-all cursor-pointer"
+                          className="px-2.5 py-1 rounded bg-surface-container-high/40 hover:bg-surface-container-highest border border-outline-variant/40 text-xs font-mono text-on-surface-variant hover:text-foreground transition-all cursor-pointer"
                         >
                           {formatNumber(val)} R$
                         </button>
@@ -582,106 +555,95 @@ export default function DevExPage() {
                     </div>
                   </div>
 
-                  {/* Premium Toggle */}
-                  <div className="flex items-center justify-between p-md rounded-lg bg-surface-container/30 border border-outline-variant/30">
-                    <div className="flex items-center gap-xs">
-                      <Crown className={`w-5 h-5 ${hasPremium ? "text-amber-400" : "text-on-surface-variant/40"}`} />
+                  {/* Premium Seller Toggle */}
+                  <div className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container/40 border border-outline-variant/30">
+                    <div className="flex items-center gap-2">
+                      <Crown className={`w-4 h-4 ${hasPremium ? "text-amber-400" : "text-on-surface-variant/40"}`} />
                       <div>
-                        <span className="text-body-sm font-bold block text-foreground">Roblox Premium (Seller)</span>
-                        <span className="text-xs text-on-surface-variant block mt-0.5">Reduces marketplace item sale commission</span>
+                        <span className="text-xs font-bold block text-foreground">Roblox Premium (Seller)</span>
+                        <span className="text-[11px] text-on-surface-variant block mt-0.5">Lowers marketplace item commission from 30% to 10%</span>
                       </div>
                     </div>
                     <button
+                      type="button"
                       onClick={() => setHasPremium(!hasPremium)}
-                      className="flex items-center gap-xs text-body-sm font-mono cursor-pointer"
+                      className="cursor-pointer text-primary transition-transform active:scale-95"
                     >
                       {hasPremium ? (
-                        <ToggleRight className="w-8 h-8 text-primary" />
+                        <ToggleRight className="w-7 h-7 text-primary" />
                       ) : (
-                        <ToggleLeft className="w-8 h-8 text-on-surface-variant/40" />
+                        <ToggleLeft className="w-7 h-7 text-on-surface-variant/40" />
                       )}
                     </button>
                   </div>
-
-                  {hasPremium && (
-                    <div className="p-md rounded-lg bg-amber-500/5 border border-amber-500/20 text-xs text-on-surface-variant">
-                      <div className="flex items-start gap-xs">
-                        <Info className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <strong className="text-amber-400">Roblox Premium Active:</strong> Marketplace fee reduced from 30% to <strong className="text-foreground">10%</strong> for item sales. 
-                          The <strong className="text-foreground">transfer tax remains 30%</strong> for direct player-to-player gamepass/donation transfers.
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
 
-            {/* Right Column: Comparative Results */}
-            <div className="space-y-lg">
+            {/* Right Column: Comparative Transfer Results (5 cols) */}
+            <div className="lg:col-span-5 space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-body-md font-bold">Transfer & Fee Results</CardTitle>
-                  <CardDescription>How much Robux is received under different transfer scenarios.</CardDescription>
+                <CardHeader className="pb-3 border-b border-outline-variant/30">
+                  <CardTitle className="text-base font-bold">Calculation Results</CardTitle>
+                  <CardDescription>Net Robux received under different transfer scenarios.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-md">
-                  {/* Scenario 1: Player-to-Player Transfer */}
-                  <div className="p-md rounded-lg bg-surface-container/40 border border-outline-variant/30 space-y-sm">
-                    <span className="text-xs px-2 py-0.5 rounded bg-red-400/10 text-red-400 border border-red-400/20 font-bold font-mono">
-                      Direct P2P Transfer (30% Tax)
-                    </span>
-                    <p className="text-xs text-on-surface-variant leading-normal">
-                      {transferMode === "send" 
-                        ? "Standard transaction fee applied when donating or transferring Robux directly."
-                        : "How much you need to send so they receive the target amount."}
-                    </p>
-                    <div className="space-y-xs pt-xs font-mono text-body-sm">
-                      <div className={`flex justify-between ${transferMode === "receive" ? "text-primary font-bold" : "text-on-surface-variant"}`}>
-                        <span>You Must Send:</span>
-                        <span className={transferMode === "receive" ? "text-primary font-bold" : ""}>{formatNumber(p2pSentAmount)} R$</span>
+                <CardContent className="space-y-4 pt-4">
+                  
+                  {/* Scenario 1: P2P Transfer */}
+                  <div className="p-3.5 rounded-lg bg-surface-container/40 border border-outline-variant/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground">Direct Player-to-Player</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-red-400/10 text-red-400 border border-red-400/20 font-bold font-mono">
+                        30% Tax
+                      </span>
+                    </div>
+                    <div className="space-y-1 pt-1 font-mono text-xs">
+                      <div className="flex justify-between text-on-surface-variant">
+                        <span>You Send:</span>
+                        <span className="text-foreground font-semibold">{formatNumber(p2pSentAmount)} R$</span>
                       </div>
                       <div className="flex justify-between text-red-400">
-                        <span>Tax Withheld (30%):</span>
+                        <span>Roblox Tax (30%):</span>
                         <span>-{formatNumber(p2pTaxAmount)} R$</span>
                       </div>
-                      <div className={`flex justify-between text-body-md font-bold pt-sm border-t border-outline-variant/20 ${transferMode === "send" ? "text-emerald-400 font-bold" : "text-foreground"}`}>
+                      <div className="flex justify-between text-sm font-bold pt-2 border-t border-outline-variant/20 text-emerald-400">
                         <span>Recipient Gets:</span>
-                        <span className={transferMode === "send" ? "text-emerald-400 font-bold" : ""}>{formatNumber(p2pReceivedAmount)} R$</span>
+                        <span>{formatNumber(p2pReceivedAmount)} R$</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Scenario 2: Marketplace / Gamepass Sale */}
-                  <div className="p-md rounded-lg bg-surface-container/40 border border-outline-variant/30 space-y-sm">
-                    <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-bold font-mono">
-                      Marketplace / Item Sale ({marketplaceFeeRate}% Fee)
-                    </span>
-                    <p className="text-xs text-on-surface-variant leading-normal">
-                      {transferMode === "send"
-                        ? "Roblox marketplace fee applied when users purchase your custom items, clothing, or gamepasses."
-                        : "How much you must set the item price so you receive the target amount."}
-                    </p>
-                    <div className="space-y-xs pt-xs font-mono text-body-sm">
-                      <div className={`flex justify-between ${transferMode === "receive" ? "text-primary font-bold" : "text-on-surface-variant"}`}>
+                  {/* Scenario 2: Marketplace Sale */}
+                  <div className="p-3.5 rounded-lg bg-surface-container/40 border border-outline-variant/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground">Marketplace / Item Sale</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-bold font-mono">
+                        {marketplaceFeeRate}% Fee
+                      </span>
+                    </div>
+                    <div className="space-y-1 pt-1 font-mono text-xs">
+                      <div className="flex justify-between text-on-surface-variant">
                         <span>Required List Price:</span>
-                        <span className={transferMode === "receive" ? "text-primary font-bold" : ""}>{formatNumber(marketPriceAmount)} R$</span>
+                        <span className="text-foreground font-semibold">{formatNumber(marketPriceAmount)} R$</span>
                       </div>
                       <div className="flex justify-between text-red-400">
-                        <span>Marketplace Fee ({marketplaceFeeRate}%):</span>
+                        <span>Marketplace Cut ({marketplaceFeeRate}%):</span>
                         <span>-{formatNumber(marketFeeAmount)} R$</span>
                       </div>
-                      <div className={`flex justify-between text-body-md font-bold pt-sm border-t border-outline-variant/20 ${transferMode === "send" ? "text-emerald-400 font-bold" : "text-foreground"}`}>
+                      <div className="flex justify-between text-sm font-bold pt-2 border-t border-outline-variant/20 text-emerald-400">
                         <span>Creator Earns:</span>
-                        <span className={transferMode === "send" ? "text-emerald-400 font-bold" : ""}>{formatNumber(marketEarnedAmount)} R$</span>
+                        <span>{formatNumber(marketEarnedAmount)} R$</span>
                       </div>
                     </div>
                   </div>
+
                 </CardContent>
               </Card>
             </div>
+
           </div>
         )}
+
       </div>
     </main>
   );

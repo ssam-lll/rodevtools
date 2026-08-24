@@ -64,8 +64,8 @@ export default function GameThumbnail({ universeId, size = "md", className = "" 
 
   if (loading) {
     return (
-      <div 
-        className={`${sizeClasses[size]} bg-surface-container-high animate-pulse flex-shrink-0 ${className}`} 
+      <div
+        className={`${sizeClasses[size]} bg-surface-container-high animate-pulse flex-shrink-0 ${className}`}
         style={{
           width: `${activeMetrics.width}px`,
           height: `${activeMetrics.height}px`,
@@ -77,7 +77,7 @@ export default function GameThumbnail({ universeId, size = "md", className = "" 
 
   if (error || !imageUrl) {
     return (
-      <div 
+      <div
         className={`${sizeClasses[size]} bg-surface-container-high flex items-center justify-center flex-shrink-0 border border-outline-variant/40 ${className}`}
         style={{
           width: `${activeMetrics.width}px`,
