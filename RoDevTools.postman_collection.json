@@ -1,0 +1,593 @@
+{
+	"info": {
+		"_postman_id": "a8f12c34-7890-4abc-9def-rodevtools01",
+		"name": "RoDevTools API",
+		"description": "Colección completa para pruebas de todos los endpoints del backend RoDevTools (Spring Boot).\n\nIncluye:\n- Autenticación (Registro y Login con extracción automática de JWT a variables)\n- Universos y Juegos de Roblox (Listado paginado, detalle X-Ray, Rising Stars)\n- Consolidación de snapshots\n- Proxy de miniaturas (Thumbnails de Roblox)\n- Radar personal del usuario (Listar, Agregar, Eliminar juegos rastreados)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "01. Authentication",
+			"description": "Endpoints públicos de autenticación y gestión de sesiones",
+			"item": [
+				{
+					"name": "1. Registrar Usuario",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Si no deseas cambiar el email manualmente en cada prueba,",
+									"// puedes descomentar la siguiente línea para generar un email único aleatorio:",
+									"// pm.collectionVariables.set('userEmail', 'user_' + Date.now() + '@example.com');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna Token JWT y datos del usuario\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('token');",
+									"    pm.expect(jsonData).to.have.property('email');",
+									"    pm.expect(jsonData).to.have.property('role');",
+									"    ",
+									"    // Guardar token automáticamente para los siguientes requests protegidos",
+									"    pm.collectionVariables.set(\"token\", jsonData.token);",
+									"    console.log(\"Token JWT guardado automáticamente en la variable 'token'\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{userEmail}}\",\n    \"password\": \"{{userPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Registra una nueva cuenta de usuario.\nNota: El backend aplica Rate Limit de 3 registros por hora por IP."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Iniciar Sesión (Login)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna Token JWT válido\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('token');",
+									"    pm.expect(jsonData.email).to.eql(pm.collectionVariables.get(\"userEmail\"));",
+									"    ",
+									"    // Guardar token automáticamente para los requests que lo requieren",
+									"    pm.collectionVariables.set(\"token\", jsonData.token);",
+									"    console.log(\"Token JWT actualizado exitosamente en variable 'token'\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{userEmail}}\",\n    \"password\": \"{{userPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Autentica un usuario existente y devuelve el token JWT.\nNota: El backend aplica Rate Limit de 5 intentos por 15 minutos por IP."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "02. Universes & Analytics",
+			"description": "Consultas públicas y analíticas de universos de Roblox",
+			"item": [
+				{
+					"name": "1. Listar Universos Paginados",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta contiene paginación y array de content\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('content');",
+									"    pm.expect(Array.isArray(jsonData.content)).to.be.true;",
+									"    ",
+									"    if (jsonData.content.length > 0) {",
+									"        var firstGame = jsonData.content[0];",
+									"        pm.expect(firstGame).to.have.property('universeId');",
+									"        pm.expect(firstGame).to.have.property('gameName');",
+									"        pm.expect(firstGame).to.have.property('playing');",
+									"        ",
+									"        // Guardar el primer universeId encontrado para reutilizarlo",
+									"        pm.collectionVariables.set(\"universeId\", firstGame.universeId);",
+									"        console.log(\"Variable 'universeId' actualizada con: \" + firstGame.universeId);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/universes?page=0&size=20&sort=playing&dir=desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"universes"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Número de página (0-indexed)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Tamaño de página (1 a 100)"
+								},
+								{
+									"key": "sort",
+									"value": "playing",
+									"description": "Campo de ordenamiento: playing, name, creator, visits, rating, category"
+								},
+								{
+									"key": "dir",
+									"value": "desc",
+									"description": "Dirección: asc o desc"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Filtro opcional por nombre de juego",
+									"disabled": true
+								},
+								{
+									"key": "category",
+									"value": "",
+									"description": "Filtro opcional por categoría",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Retorna lista paginada de juegos/universos almacenados en la base de datos."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Detalle X-Ray de Juego por ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna estructura X-Ray completa del juego\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('universeId');",
+									"    pm.expect(jsonData).to.have.property('gameName');",
+									"    pm.expect(jsonData).to.have.property('monthlyRevenue');",
+									"    pm.expect(jsonData).to.have.property('metrics');",
+									"    pm.expect(Array.isArray(jsonData.metrics)).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/universes?id={{universeId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"universes"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "{{universeId}}",
+									"description": "ID del universo Roblox (si no está en BD, el backend lo sincroniza automáticamente con la API de Roblox)"
+								}
+							]
+						},
+						"description": "Obtiene la analítica detallada X-Ray de un juego (métricas diarias, ingresos estimados, ccu promedio). Si el juego no existe en BD, el backend invoca automáticamente la API de Roblox para sincronizarlo."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Juegos en Crecimiento (Rising Stars)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna listado paginado de Rising Stars\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('content');",
+									"    pm.expect(Array.isArray(jsonData.content)).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/universes/rising?page=0&size=20&sort=growth24h&dir=desc&minPlaying=100&hours=24",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"universes",
+								"rising"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "growth24h",
+									"description": "Campos: growth24h, name, creator, activePlayers, rating"
+								},
+								{
+									"key": "dir",
+									"value": "desc"
+								},
+								{
+									"key": "minPlaying",
+									"value": "100",
+									"description": "Jugadores concurrentes mínimos"
+								},
+								{
+									"key": "maxPlaying",
+									"value": "100000000",
+									"disabled": true
+								},
+								{
+									"key": "hours",
+									"value": "24",
+									"description": "Ventana de cálculo en horas"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Retorna juegos ordenados por tasa de crecimiento y health score durante la ventana de tiempo especificada."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "03. Thumbnails Proxy",
+			"description": "Proxy público hacia la CDN de Roblox para iconos y miniaturas",
+			"item": [
+				{
+					"name": "1. Obtener Miniaturas / Iconos de Juegos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta upstream contiene array 'data' de miniaturas\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"    pm.expect(Array.isArray(jsonData.data)).to.be.true;",
+									"    if (jsonData.data.length > 0) {",
+									"        pm.expect(jsonData.data[0]).to.have.property('imageUrl');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/thumbnails?universeIds={{universeId}},92085123&size=150x150",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"thumbnails"
+							],
+							"query": [
+								{
+									"key": "universeIds",
+									"value": "{{universeId}},92085123",
+									"description": "IDs de universo separados por coma (máx 100, solo números y comas)"
+								},
+								{
+									"key": "size",
+									"value": "150x150",
+									"description": "Tamaño permitido: 150x150, 256x256, 420x420, 512x512"
+								}
+							]
+						},
+						"description": "Proxy seguro que consulta la API de Roblox para obtener las URLs de los iconos oficiales de los universos solicitados."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "04. User Radar",
+			"description": "Gestión de juegos en seguimiento por el usuario autenticado (Requiere Bearer Token)",
+			"item": [
+				{
+					"name": "1. Listar Juegos en Mi Radar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta es un array de juegos en radar\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(Array.isArray(jsonData)).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/radar",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"radar"
+							]
+						},
+						"description": "Devuelve la lista de juegos que el usuario autenticado tiene agregados a su radar."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Agregar Juego al Radar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta confirma guardado en radar\", function () {",
+									"    var responseText = pm.response.text();",
+									"    pm.expect(responseText.includes(\"radar\") || responseText.includes(\"tracked\")).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"universeId\": {{universeId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/radar",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"radar"
+							]
+						},
+						"description": "Agrega un juego al radar del usuario autenticado. Si el juego no está en la base de datos, el backend lo sincroniza automáticamente con la API de Roblox."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Eliminar Juego del Radar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta confirma eliminación\", function () {",
+									"    var responseText = pm.response.text();",
+									"    pm.expect(responseText).to.include(\"Game deleted from radar\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/radar/{{universeId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"radar",
+								"{{universeId}}"
+							]
+						},
+						"description": "Elimina el juego con el universeId especificado del radar del usuario autenticado."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "userEmail",
+			"value": "dev_user@example.com",
+			"type": "string"
+		},
+		{
+			"key": "userPassword",
+			"value": "Password123!",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "universeId",
+			"value": "113491250",
+			"type": "string"
+		},
+		{
+			"key": "apiKey",
+			"value": "your_api_key_here",
+			"type": "string"
+		}
+	]
+}

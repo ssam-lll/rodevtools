@@ -26,13 +26,6 @@ public class GameController {
 
     private final GameService gameService;
     private final GameAnalyticsService gameAnalyticsService;
-    private final com.rodevtools.backend.service.SnapshotConsolidationService snapshotConsolidationService;
-
-    @PostMapping("/snapshots/consolidate")
-    public ResponseEntity<?> consolidateSnapshots(
-            @RequestParam(value = "days", defaultValue = "14") int days) {
-        return ResponseEntity.ok(snapshotConsolidationService.consolidateAndPurge(days));
-    }
 
     @GetMapping
     public ResponseEntity<?> getUniverses(
