@@ -145,7 +145,6 @@ public class RobloxApiService {
             return Optional.empty();
         }
 
-        // 1. Try to resolve as Place ID first (since Roblox game URLs contain Place IDs, not Universe IDs)
         Optional<Long> resolvedUniverseId = resolvePlaceIdToUniverseId(id);
         if (resolvedUniverseId.isPresent()) {
             List<RobloxGameDataDto> resolvedBatch = fetchGamesBatch(List.of(resolvedUniverseId.get()));
@@ -154,7 +153,6 @@ public class RobloxApiService {
             }
         }
 
-        // 2. If it's not a Place ID, fetch directly as a Universe ID
         List<RobloxGameDataDto> batch = fetchGamesBatch(List.of(id));
         if (!batch.isEmpty()) {
             return Optional.of(batch.get(0));

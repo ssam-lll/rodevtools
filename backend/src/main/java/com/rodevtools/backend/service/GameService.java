@@ -206,13 +206,11 @@ public class GameService {
     }
 
     private Optional<Game> resolveByNumericId(Long id) {
-        // 1. Check if this numeric ID is a known rootPlaceId in DB
         Optional<Game> byRootPlace = gameRepository.findByRootPlaceId(id);
         if (byRootPlace.isPresent()) {
             return byRootPlace;
         }
 
-        // 2. Check if this numeric ID is a valid Roblox Place ID (URLs and player queries are overwhelmingly Place IDs)
         Optional<Long> universeIdOpt = robloxApiService.resolvePlaceIdToUniverseId(id);
         if (universeIdOpt.isPresent()) {
             Long universeId = universeIdOpt.get();
@@ -226,13 +224,11 @@ public class GameService {
             }
         }
 
-        // 3. Check if it's already in DB by Universe ID
         Optional<Game> byUniverse = gameRepository.findById(id);
         if (byUniverse.isPresent()) {
             return byUniverse;
         }
 
-        // 4. Finally, attempt to sync directly as a Universe ID
         Game synced = syncGame(id);
         return Optional.ofNullable(synced);
     }

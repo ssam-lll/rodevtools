@@ -337,7 +337,6 @@ function XRayDashboard() {
 
     setShowSuggestions(false);
 
-    // If user entered a URL, validate that it is a Roblox game URL
     if (trimmed.includes("roblox.com") || /^https?:\/\//i.test(trimmed)) {
       const extractedPlaceId = extractPlaceIdFromUrl(trimmed);
       if (extractedPlaceId) {
