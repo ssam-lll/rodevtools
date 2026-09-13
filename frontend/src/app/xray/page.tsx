@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Search, Activity, Users, DollarSign, Heart, ArrowLeft, History, Trash2,
@@ -27,6 +27,7 @@ import {
 // Interface for X-Ray Game details
 interface XRayGameDetails {
   universeId: string;
+  rootPlaceId?: string | number;
   name: string;
   creator: string;
   activePlayers: number;
@@ -49,6 +50,7 @@ interface XRayGameDetails {
 // Interface for list game
 interface ListGame {
   universeId: string;
+  rootPlaceId?: string | number;
   name: string;
   creator: string;
   activePlayers: number;
@@ -94,6 +96,15 @@ function XRayDashboard() {
   const universeId = searchParams.get("universeId");
 
   const [searchInput, setSearchInput] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState<ListGame[]>([]);
+  const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Top games table search filter
+  const [topGamesSearch, setTopGamesSearch] = useState("");
+  const [debouncedTopGamesSearch, setDebouncedTopGamesSearch] = useState("");
+
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [mounted, setMounted] = useState(false);
   const [activeGame, setActiveGame] = useState<XRayGameDetails | null>(null);
@@ -173,10 +184,77 @@ function XRayDashboard() {
     };
   }, []);
 
+  // Debounce search input for live autocomplete suggestions
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+    if (!trimmed || trimmed.length < 2) {
+      setSearchSuggestions([]);
+      setIsSearchingSuggestions(false);
+      return;
+    }
+
+    // Don't search suggestions if user typed a pure number or a full URL
+    if (/^\d+$/.test(trimmed) || trimmed.includes("roblox.com")) {
+      setSearchSuggestions([]);
+      setIsSearchingSuggestions(false);
+      return;
+    }
+
+    setIsSearchingSuggestions(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/universes?search=${encodeURIComponent(trimmed)}&size=6`, {
+        signal: controller.signal,
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          const games = Array.isArray(data) ? data : (data && Array.isArray(data.content) ? data.content : []);
+          setSearchSuggestions(games);
+          setIsSearchingSuggestions(false);
+          setShowSuggestions(true);
+        })
+        .catch((err) => {
+          if (err.name !== "AbortError") {
+            setSearchSuggestions([]);
+            setIsSearchingSuggestions(false);
+          }
+        });
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchInput]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Debounce top games table search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedTopGamesSearch(topGamesSearch);
+      setTopGamesPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [topGamesSearch]);
+
   // Fetch all games for the top games table (server-side paginated)
   useEffect(() => {
+    const controller = new AbortController();
     setAllGamesLoading(true);
-    fetch(`/api/universes?page=${topGamesPage}&size=20&sort=playing&dir=desc`)
+    const searchParam = debouncedTopGamesSearch ? `&search=${encodeURIComponent(debouncedTopGamesSearch)}` : "";
+    fetch(`/api/universes?page=${topGamesPage}&size=20&sort=playing&dir=desc${searchParam}`, {
+      signal: controller.signal,
+    })
       .then((res) => res.json())
       .then((data) => {
         const gamesArray = Array.isArray(data) ? data : (data && Array.isArray(data.content) ? data.content : []);
@@ -188,10 +266,16 @@ function XRayDashboard() {
         setAllGamesLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching games list:", err);
-        setAllGamesLoading(false);
+        if (err.name !== "AbortError") {
+          console.error("Error fetching games list:", err);
+          setAllGamesLoading(false);
+        }
       });
-  }, [topGamesPage]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [topGamesPage, debouncedTopGamesSearch]);
 
   // Fetch details for active universe ID
   useEffect(() => {
@@ -200,12 +284,15 @@ function XRayDashboard() {
       return;
     }
 
+    const controller = new AbortController();
     setLoading(true);
     setErrorMsg("");
-    fetch(`/api/universes?id=${universeId}`)
+    fetch(`/api/universes/resolve?query=${encodeURIComponent(universeId)}`, {
+      signal: controller.signal,
+    })
       .then((res) => {
         if (!res.ok) {
-          throw new Error("Game not found in database.");
+          throw new Error("Game not found in database or Roblox.");
         }
         return res.json();
       })
@@ -214,30 +301,73 @@ function XRayDashboard() {
         setLoading(false);
         if (data && data.universeId) {
           setHistory((prevHistory) => {
-            const filtered = prevHistory.filter((item) => item.id !== data.universeId);
-            const updated = [{ id: data.universeId, name: data.name || data.universeId }, ...filtered].slice(0, 5);
+            const filtered = prevHistory.filter((item) => String(item.id) !== String(data.universeId));
+            const updated = [{ id: String(data.universeId), name: data.name || String(data.universeId) }, ...filtered].slice(0, 5);
             localStorage.setItem("xray_search_history", JSON.stringify(updated));
             return updated;
           });
         }
       })
       .catch((err) => {
-        console.error("Error loading xray details:", err);
-        setErrorMsg(err.message || "Failed to load game analytics.");
-        setLoading(false);
-        setActiveGame(null);
+        if (err.name !== "AbortError") {
+          console.error("Error loading xray details:", err);
+          setErrorMsg(err.message || "Failed to load game analytics.");
+          setLoading(false);
+          setActiveGame(null);
+        }
       });
+
+    return () => {
+      controller.abort();
+    };
   }, [universeId]);
+
+  const extractPlaceIdFromUrl = (url: string): string | null => {
+    const match = url.match(/(?:games[/=]|placeId=)(\d+)/);
+    return match ? match[1] : null;
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchInput.trim()) return;
-    triggerSearch(searchInput.trim());
+    const trimmed = searchInput.trim();
+    if (!trimmed) return;
+
+    setShowSuggestions(false);
+
+    // If user entered a URL, validate that it is a Roblox game URL
+    if (/^https?:\/\//i.test(trimmed)) {
+      const extractedPlaceId = extractPlaceIdFromUrl(trimmed);
+      if (extractedPlaceId) {
+        triggerSearch(extractedPlaceId);
+      } else {
+        setToastMessage("Please enter a valid Roblox game URL (e.g. roblox.com/games/...)");
+      }
+      return;
+    }
+
+    // If suggestions are currently visible and there's a match:
+    if (searchSuggestions.length > 0) {
+      const exactMatch = searchSuggestions.find(
+        (g) => g.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (exactMatch) {
+        triggerSearch(exactMatch.universeId);
+        return;
+      }
+      // If not numeric, pick the top suggestion
+      if (!/^\d+$/.test(trimmed)) {
+        triggerSearch(searchSuggestions[0].universeId);
+        return;
+      }
+    }
+
+    triggerSearch(trimmed);
   };
 
-  const triggerSearch = (id: string) => {
-    router.push(`/xray?universeId=${id}`);
+  const triggerSearch = (id: string | number) => {
+    router.push(`/xray?universeId=${encodeURIComponent(String(id))}`);
     setSearchInput("");
+    setShowSuggestions(false);
   };
 
   const clearHistory = () => {
@@ -451,23 +581,74 @@ function XRayDashboard() {
             </p>
           </div>
 
-          <div className="flex flex-col gap-1.5 w-full md:w-auto">
+          <div ref={searchContainerRef} className="relative flex flex-col gap-1.5 w-full md:w-96">
             {/* Search Input - prominent */}
-            <form onSubmit={handleSearchSubmit} className="relative flex-1 sm:w-96">
+            <form onSubmit={handleSearchSubmit} className="relative flex-1">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <Search className="w-4 h-4 text-primary" />
               </span>
               <input
                 type="text"
-                placeholder="Enter a Universe ID (e.g., 292439477)"
+                placeholder="Search game name, Place ID, URL..."
                 value={searchInput}
+                onFocus={() => {
+                  if (searchSuggestions.length > 0) setShowSuggestions(true);
+                }}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-container/60 hover:bg-surface-container focus:bg-surface-container border border-primary/30 focus:border-primary focus:outline-none text-sm transition-all placeholder:text-on-surface-variant/50"
+                className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-surface-container/60 hover:bg-surface-container focus:bg-surface-container border border-primary/30 focus:border-primary focus:outline-none text-sm transition-all placeholder:text-on-surface-variant/50"
               />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearchSuggestions([]);
+                    setShowSuggestions(false);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-foreground cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </form>
-            <span className="text-xs text-on-surface-variant/60 pl-1">
-              Search by Universe ID to analyze any Roblox game
+            <span className="text-[11px] text-on-surface-variant/60 pl-1 truncate">
+              Search by name, Universe ID, Place ID, or paste Roblox link
             </span>
+
+            {/* Suggestions Dropdown */}
+            {showSuggestions && (searchSuggestions.length > 0 || isSearchingSuggestions) && (
+              <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl bg-surface-container-highest border border-outline-variant/60 shadow-xl overflow-hidden animate-fade-in">
+                {isSearchingSuggestions && searchSuggestions.length === 0 ? (
+                  <div className="p-3 text-xs text-on-surface-variant text-center">Searching games...</div>
+                ) : (
+                  <div className="divide-y divide-outline-variant/20 max-h-72 overflow-y-auto">
+                    {searchSuggestions.map((game) => (
+                      <button
+                        key={game.universeId}
+                        type="button"
+                        onClick={() => triggerSearch(game.universeId)}
+                        className="w-full text-left px-3 py-2.5 hover:bg-surface-container flex items-center gap-3 transition-colors cursor-pointer group"
+                      >
+                        <GameThumbnail universeId={String(game.universeId)} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-foreground group-hover:text-primary truncate transition-colors">
+                            {game.name}
+                          </div>
+                          <div className="text-[11px] text-on-surface-variant truncate">
+                            {game.creator}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-[11px] font-mono font-medium text-primary">
+                            {formatNumber(game.activePlayers)} CCU
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -505,8 +686,15 @@ function XRayDashboard() {
                 <span>Back to Overview</span>
               </button>
 
-              <div className="text-sm text-on-surface-variant font-mono">
-                Universe ID: <span className="text-primary font-bold">{activeGame.universeId}</span>
+              <div className="flex items-center gap-3 text-sm text-on-surface-variant font-mono">
+                {activeGame.rootPlaceId && (
+                  <div>
+                    Place ID: <span className="text-foreground font-bold">{activeGame.rootPlaceId}</span>
+                  </div>
+                )}
+                <div>
+                  Universe ID: <span className="text-primary font-bold">{activeGame.universeId}</span>
+                </div>
               </div>
             </div>
 
@@ -566,15 +754,17 @@ function XRayDashboard() {
 
             {/* Action Buttons Row */}
             <div className="flex flex-wrap items-center gap-3">
-              <a
-                href={`https://www.roblox.com/games/${activeGame.universeId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary-container transition-all"
-              >
-                <ExternalLink className="w-4 h-4" />
-                <span>Visit on Roblox</span>
-              </a>
+              {activeGame.rootPlaceId && (
+                <a
+                  href={`https://www.roblox.com/games/${activeGame.rootPlaceId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary-container transition-all"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Visit on Roblox</span>
+                </a>
+              )}
 
               <button
                 onClick={handleAddToCollection}
@@ -895,10 +1085,32 @@ function XRayDashboard() {
 
             {/* Top Games Table */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <BarChart3 className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-bold text-foreground">Top Games</h2>
-                <span className="text-xs text-on-surface-variant font-mono ml-2">Sorted by active players</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  <h2 className="text-lg font-bold text-foreground">Top Games</h2>
+                  <span className="text-xs text-on-surface-variant font-mono ml-2">Sorted by active players</span>
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 text-on-surface-variant absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Filter top games by name..."
+                    value={topGamesSearch}
+                    onChange={(e) => setTopGamesSearch(e.target.value)}
+                    className="w-full pl-9 pr-8 py-1.5 rounded-lg bg-surface-container-high/70 border border-outline-variant/40 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40 transition-colors"
+                  />
+                  {topGamesSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setTopGamesSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-foreground cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <SortableTable

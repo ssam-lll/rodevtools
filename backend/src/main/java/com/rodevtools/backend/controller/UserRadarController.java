@@ -30,22 +30,9 @@ public class UserRadarController {
     public ResponseEntity<List<GameResponseDto>> getRadarList(@RequestAttribute("userId") String userIdStr){
         UUID userId = UUID.fromString(userIdStr);
 
-        List<GameResponseDto> trackedGames = userRadarRepository.findByUserId(userId).stream().map(radar -> {
-            Game game = radar.getGame();
-            double monthlyRevenue = gameService.calculateMonthlyRevenue(game.getPlaying());
-            int playtime = gameService.calculateEstimatedPlaytime(game.getPlaying(), game.getVisits());
-            return new GameResponseDto(
-                    game.getUniverseId(),
-                    game.getGameName(),
-                    game.getCreatorName(),
-                    game.getPlaying(),
-                    game.getVisits(),
-                    game.getRating(),
-                    game.getCategory(),
-                    monthlyRevenue,
-                    playtime
-            );
-        }).toList();
+        List<GameResponseDto> trackedGames = userRadarRepository.findByUserId(userId).stream()
+                .map(radar -> gameService.toGameResponseDto(radar.getGame()))
+                .toList();
 
         return ResponseEntity.ok(trackedGames);
     }

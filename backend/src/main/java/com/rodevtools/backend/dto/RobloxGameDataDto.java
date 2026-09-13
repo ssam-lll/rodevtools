@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public record RobloxGameDataDto(
     Long universeId,
+    Long rootPlaceId,
     String gameName,
     String description,
     Long visits,

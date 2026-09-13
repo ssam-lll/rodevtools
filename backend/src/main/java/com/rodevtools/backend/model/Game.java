@@ -11,7 +11,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "games")
+@Table(name = "games", indexes = {
+    @Index(name = "idx_games_root_place_id", columnList = "root_place_id")
+})
 @Data
 @NoArgsConstructor
 
@@ -20,6 +22,9 @@ public class Game {
 
     @Id
     private Long universeId;
+
+    @Column(name = "root_place_id")
+    private Long rootPlaceId;
 
     @Column(name = "name", nullable = false)
     private String gameName;

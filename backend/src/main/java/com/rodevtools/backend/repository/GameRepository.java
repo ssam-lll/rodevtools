@@ -12,18 +12,24 @@ import org.springframework.stereotype.Repository;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface GameRepository extends JpaRepository<Game, Long> {
 
     @Query("SELECT g.universeId FROM Game g")
-    java.util.Set<Long> findAllUniverseIds();
+    Set<Long> findAllUniverseIds();
 
     Page<Game> findByGameNameContainingIgnoreCase(String name, Pageable pageable);
 
     Page<Game> findByCategory(String category, Pageable pageable);
 
     Page<Game> findByGameNameContainingIgnoreCaseAndCategory(String name, String category, Pageable pageable);
+
+    Optional<Game> findByRootPlaceId(Long rootPlaceId);
+
+    Optional<Game> findFirstByGameNameContainingIgnoreCaseOrderByPlayingDesc(String name);
 
 
     @Query(value = "SELECT universeId, name, currentCcu, pastCcu, growthRate, creatorName, healthScore FROM (" +

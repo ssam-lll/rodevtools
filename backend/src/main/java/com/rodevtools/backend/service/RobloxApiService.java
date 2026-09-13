@@ -69,6 +69,9 @@ public class RobloxApiService {
 
                 for (JsonNode gameData : gamesArray) {
                     Long universeId = gameData.path("id").asLong();
+                    Long rootPlaceId = gameData.has("rootPlaceId") && !gameData.path("rootPlaceId").isNull()
+                            ? gameData.path("rootPlaceId").asLong()
+                            : null;
                     String name = gameData.path("name").asText();
                     String description = gameData.path("description").asText();
                     Long visits = gameData.path("visits").asLong();
@@ -83,6 +86,7 @@ public class RobloxApiService {
 
                     allResults.add(new RobloxGameDataDto(
                             universeId,
+                            rootPlaceId,
                             name,
                             description,
                             visits,
@@ -112,6 +116,10 @@ public class RobloxApiService {
     }
 
     public Optional<RobloxGameDataDto> fetchGameData(Long id) {
+        if (id == null || id <= 0) {
+            return Optional.empty();
+        }
+
         List<RobloxGameDataDto> batch = fetchGamesBatch(List.of(id));
         if (!batch.isEmpty()) {
             return Optional.of(batch.get(0));

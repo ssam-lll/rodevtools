@@ -15,7 +15,7 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "users")
 @Data
-@ToString(exclude = {"passwordHash", "salt"})
+@ToString(exclude = { "passwordHash", "salt" })
 @NoArgsConstructor
 public class User {
 

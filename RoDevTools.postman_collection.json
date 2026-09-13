@@ -149,11 +149,14 @@
 									"    if (jsonData.content.length > 0) {",
 									"        var firstGame = jsonData.content[0];",
 									"        pm.expect(firstGame).to.have.property('universeId');",
-									"        pm.expect(firstGame).to.have.property('gameName');",
-									"        pm.expect(firstGame).to.have.property('playing');",
+									"        pm.expect(firstGame).to.have.property('name');",
+									"        pm.expect(firstGame).to.have.property('activePlayers');",
 									"        ",
-									"        // Guardar el primer universeId encontrado para reutilizarlo",
+									"        // Guardar universeId y placeId encontrados para reutilizarlos",
 									"        pm.collectionVariables.set(\"universeId\", firstGame.universeId);",
+									"        if (firstGame.rootPlaceId) {",
+									"            pm.collectionVariables.set(\"placeId\", firstGame.rootPlaceId);",
+									"        }",
 									"        console.log(\"Variable 'universeId' actualizada con: \" + firstGame.universeId);",
 									"    }",
 									"});"
@@ -209,7 +212,7 @@
 								}
 							]
 						},
-						"description": "Retorna lista paginada de juegos/universos almacenados en la base de datos."
+						"description": "Retorna lista paginada de juegos/universos almacenados en la base de datos. Cada juego incluye su universeId, rootPlaceId, nombre y métricas."
 					},
 					"response": []
 				},
@@ -227,10 +230,10 @@
 									"pm.test(\"Retorna estructura X-Ray completa del juego\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(jsonData).to.have.property('universeId');",
-									"    pm.expect(jsonData).to.have.property('gameName');",
+									"    pm.expect(jsonData).to.have.property('name');",
 									"    pm.expect(jsonData).to.have.property('monthlyRevenue');",
-									"    pm.expect(jsonData).to.have.property('metrics');",
-									"    pm.expect(Array.isArray(jsonData.metrics)).to.be.true;",
+									"    pm.expect(jsonData).to.have.property('dailyMetrics');",
+									"    pm.expect(Array.isArray(jsonData.dailyMetrics)).to.be.true;",
 									"});"
 								],
 								"type": "text/javascript"
@@ -262,7 +265,57 @@
 					"response": []
 				},
 				{
-					"name": "3. Juegos en Crecimiento (Rising Stars)",
+					"name": "3. Resolver Detalle X-Ray (Resolve)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna analítica X-Ray resuelta correctamente\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('universeId');",
+									"    pm.expect(jsonData).to.have.property('name');",
+									"    pm.expect(jsonData).to.have.property('creator');",
+									"    pm.expect(jsonData).to.have.property('activePlayers');",
+									"    pm.expect(jsonData).to.have.property('dailyMetrics');",
+									"    pm.expect(Array.isArray(jsonData.dailyMetrics)).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/universes/resolve?query={{universeId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"universes",
+								"resolve"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "{{universeId}}",
+									"description": "Acepta: Universe ID (ej: 113491250), Root Place ID (ej: 920587237), URL completa de Roblox (ej: https://www.roblox.com/games/920587237/Adopt-Me) o nombre del juego."
+								}
+							]
+						},
+						"description": "Endpoint inteligente y fuertemente tipado para resolver juegos. Si se pasa un Place ID o enlace web que no está en la base de datos local, consulta la API de Roblox en tiempo real y lo persiste."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Juegos en Crecimiento (Rising Stars)",
 					"event": [
 						{
 							"listen": "test",
@@ -582,6 +635,11 @@
 		{
 			"key": "universeId",
 			"value": "113491250",
+			"type": "string"
+		},
+		{
+			"key": "placeId",
+			"value": "920587237",
 			"type": "string"
 		},
 		{

@@ -11,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 public class XRayDetailsDto {
     private Long universeId;
+    private Long rootPlaceId;
     private String name;
     private String creator;
     private Long visits;

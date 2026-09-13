@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class GameResponseDto {
     private Long universeId;
+    private Long rootPlaceId;
     private String name;
     private String creator;
     private Long activePlayers;

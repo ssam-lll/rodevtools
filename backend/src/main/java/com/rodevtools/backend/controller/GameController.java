@@ -2,6 +2,7 @@ package com.rodevtools.backend.controller;
 
 import com.rodevtools.backend.dto.GameResponseDto;
 import com.rodevtools.backend.dto.RisingStarResponseDto;
+import com.rodevtools.backend.dto.XRayDetailsDto;
 import com.rodevtools.backend.model.Game;
 import com.rodevtools.backend.repository.projection.RisingStarProjection;
 import com.rodevtools.backend.service.GameAnalyticsService;
@@ -27,9 +28,19 @@ public class GameController {
     private final GameService gameService;
     private final GameAnalyticsService gameAnalyticsService;
 
+    @GetMapping("/resolve")
+    public ResponseEntity<XRayDetailsDto> resolveGame(@RequestParam("query") String query) {
+        if (query == null || query.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        return gameService.resolveGame(query)
+                .map(game -> ResponseEntity.ok(gameService.getXRayDetails(game)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping
     public ResponseEntity<?> getUniverses(
-            @RequestParam(value = "id", required = false) Long id,
+            @RequestParam(value = "id", required = false) String id,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sort", defaultValue = "playing") String sortField,
@@ -37,16 +48,10 @@ public class GameController {
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "category", required = false) String category) {
 
-        if (id != null) {
-            return gameService.findById(id)
+        if (id != null && !id.isBlank()) {
+            return gameService.resolveGame(id)
                     .map(game -> ResponseEntity.ok(gameService.getXRayDetails(game)))
-                    .orElseGet(() -> {
-                        Game synced = gameService.syncGame(id);
-                        if (synced != null) {
-                            return ResponseEntity.ok(gameService.getXRayDetails(synced));
-                        }
-                        return ResponseEntity.notFound().build();
-                    });
+                    .orElseGet(() -> ResponseEntity.notFound().build());
         }
 
         if (size > 100) size = 100;
@@ -59,22 +64,7 @@ public class GameController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<Game> gamePage = gameService.findAllPaginated(pageable, search, category);
-
-        Page<GameResponseDto> responsePage = gamePage.map(game -> {
-            double monthlyRevenue = gameService.calculateMonthlyRevenue(game.getPlaying());
-            int playtime = gameService.calculateEstimatedPlaytime(game.getPlaying(), game.getVisits());
-            return new GameResponseDto(
-                    game.getUniverseId(),
-                    game.getGameName(),
-                    game.getCreatorName(),
-                    game.getPlaying(),
-                    game.getVisits(),
-                    game.getRating(),
-                    game.getCategory(),
-                    monthlyRevenue,
-                    playtime
-            );
-        });
+        Page<GameResponseDto> responsePage = gamePage.map(gameService::toGameResponseDto);
 
         return ResponseEntity.ok(responsePage);
     }

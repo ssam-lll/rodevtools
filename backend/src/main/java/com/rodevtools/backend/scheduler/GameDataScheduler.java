@@ -1,6 +1,7 @@
 package com.rodevtools.backend.scheduler;
 
 import com.rodevtools.backend.service.GameService;
+import com.rodevtools.backend.service.SnapshotConsolidationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -10,19 +11,27 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class GameDataScheduler {
 
     private final GameService gameService;
-    private final com.rodevtools.backend.service.SnapshotConsolidationService snapshotConsolidationService;
+    private final SnapshotConsolidationService snapshotConsolidationService;
 
-    @Scheduled(cron = "0 * * * * ?")
+    @Value("${app.scheduler.game-sync.cutoff-hours:6}")
+    private int cutoffHours;
+
+    @Value("${app.scheduler.game-sync.batch-size:100}")
+    private int batchSize;
+
+    @Scheduled(cron = "${app.scheduler.game-sync.cron:0 0 * * * ?}")
     public void syncPendingGames() {
-        Instant cutoff = Instant.now().minus(6, ChronoUnit.HOURS);
+        Instant cutoff = Instant.now().minus(cutoffHours, ChronoUnit.HOURS);
 
-        List<Long> gameIdsToSync = gameService.getGamesToSync(cutoff, 100);
+        List<Long> gameIdsToSync = gameService.getGamesToSync(cutoff, batchSize);
 
         if (gameIdsToSync.isEmpty()) {
             return;
