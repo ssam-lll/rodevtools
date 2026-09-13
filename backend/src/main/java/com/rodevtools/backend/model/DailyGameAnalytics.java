@@ -39,20 +39,16 @@ public class DailyGameAnalytics {
     @Column(nullable = false)
     private LocalDate date;
 
-    @Column(name = "average_playing")
     private Long averagePlaying;
 
-    @Column(name = "max_visits")
     private Long maxVisits;
 
-    @Column(name = "min_playing")
     private Long minPlaying;
 
-    @Column(name = "max_playing")
     private Long maxPlaying;
 
     @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     public DailyGameAnalytics(Game game, LocalDate date, Long averagePlaying, Long maxVisits, Long minPlaying, Long maxPlaying) {
