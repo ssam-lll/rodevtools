@@ -164,7 +164,7 @@ public class GameService {
             String extractedId = matcher.group(1);
             try {
                 Long placeId = Long.parseLong(extractedId);
-                return resolveByNumericId(placeId);
+                return resolveByPlaceId(placeId);
             } catch (NumberFormatException ignored) {}
         }
 
@@ -183,16 +183,56 @@ public class GameService {
         return Optional.empty();
     }
 
-    private Optional<Game> resolveByNumericId(Long id) {
-        Optional<Game> byUniverse = gameRepository.findById(id);
-        if (byUniverse.isPresent()) {
-            return byUniverse;
+    private Optional<Game> resolveByPlaceId(Long placeId) {
+        Optional<Game> byRootPlace = gameRepository.findByRootPlaceId(placeId);
+        if (byRootPlace.isPresent()) {
+            return byRootPlace;
         }
+
+        Optional<Long> universeIdOpt = robloxApiService.resolvePlaceIdToUniverseId(placeId);
+        if (universeIdOpt.isPresent()) {
+            Long universeId = universeIdOpt.get();
+            Optional<Game> byUniverse = gameRepository.findById(universeId);
+            if (byUniverse.isPresent()) {
+                return byUniverse;
+            }
+            Game synced = syncGame(universeId);
+            if (synced != null) {
+                return Optional.of(synced);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<Game> resolveByNumericId(Long id) {
+        // 1. Check if this numeric ID is a known rootPlaceId in DB
         Optional<Game> byRootPlace = gameRepository.findByRootPlaceId(id);
         if (byRootPlace.isPresent()) {
             return byRootPlace;
         }
 
+        // 2. Check if this numeric ID is a valid Roblox Place ID (URLs and player queries are overwhelmingly Place IDs)
+        Optional<Long> universeIdOpt = robloxApiService.resolvePlaceIdToUniverseId(id);
+        if (universeIdOpt.isPresent()) {
+            Long universeId = universeIdOpt.get();
+            Optional<Game> byUniverse = gameRepository.findById(universeId);
+            if (byUniverse.isPresent()) {
+                return byUniverse;
+            }
+            Game synced = syncGame(universeId);
+            if (synced != null) {
+                return Optional.of(synced);
+            }
+        }
+
+        // 3. Check if it's already in DB by Universe ID
+        Optional<Game> byUniverse = gameRepository.findById(id);
+        if (byUniverse.isPresent()) {
+            return byUniverse;
+        }
+
+        // 4. Finally, attempt to sync directly as a Universe ID
         Game synced = syncGame(id);
         return Optional.ofNullable(synced);
     }

@@ -115,34 +115,49 @@ public class RobloxApiService {
         }
     }
 
-    public Optional<RobloxGameDataDto> fetchGameData(Long id) {
-        if (id == null || id <= 0) {
+    public Optional<Long> resolvePlaceIdToUniverseId(Long placeId) {
+        if (placeId == null || placeId <= 0) {
             return Optional.empty();
         }
-
-        List<RobloxGameDataDto> batch = fetchGamesBatch(List.of(id));
-        if (!batch.isEmpty()) {
-            return Optional.of(batch.get(0));
-        }
-
-        log.info("ROBLOX API: ID {} not found in batch, trying to resolve as place ID...", id);
         try {
-            String resolveUrl = "https://apis.roblox.com/universes/v1/places/" + id + "/universe";
+            String resolveUrl = "https://apis.roblox.com/universes/v1/places/" + placeId + "/universe";
             String resolveResponse = restTemplate.getForObject(resolveUrl, String.class);
+            if (resolveResponse == null || resolveResponse.isBlank()) {
+                return Optional.empty();
+            }
             JsonNode resolveRoot = objectMapper.readTree(resolveResponse);
 
             if (resolveRoot.has("universeId") && !resolveRoot.get("universeId").isNull()) {
                 Long resolveUniverseId = resolveRoot.get("universeId").asLong();
                 if (resolveUniverseId > 0) {
-                    log.info("ROBLOX API: Place ID {} resolved to Universe ID {}", id, resolveUniverseId);
-                    List<RobloxGameDataDto> resolvedBatch = fetchGamesBatch(List.of(resolveUniverseId));
-                    if (!resolvedBatch.isEmpty()) {
-                        return Optional.of(resolvedBatch.get(0));
-                    }
+                    log.info("ROBLOX API: Place ID {} resolved to Universe ID {}", placeId, resolveUniverseId);
+                    return Optional.of(resolveUniverseId);
                 }
             }
         } catch (Exception e) {
-            log.error("ROBLOX API: Failed to resolve Place ID {}: {}", id, e.getMessage());
+            log.warn("ROBLOX API: Failed to resolve Place ID {}: {}", placeId, e.getMessage());
+        }
+        return Optional.empty();
+    }
+
+    public Optional<RobloxGameDataDto> fetchGameData(Long id) {
+        if (id == null || id <= 0) {
+            return Optional.empty();
+        }
+
+        // 1. Try to resolve as Place ID first (since Roblox game URLs contain Place IDs, not Universe IDs)
+        Optional<Long> resolvedUniverseId = resolvePlaceIdToUniverseId(id);
+        if (resolvedUniverseId.isPresent()) {
+            List<RobloxGameDataDto> resolvedBatch = fetchGamesBatch(List.of(resolvedUniverseId.get()));
+            if (!resolvedBatch.isEmpty()) {
+                return Optional.of(resolvedBatch.get(0));
+            }
+        }
+
+        // 2. If it's not a Place ID, fetch directly as a Universe ID
+        List<RobloxGameDataDto> batch = fetchGamesBatch(List.of(id));
+        if (!batch.isEmpty()) {
+            return Optional.of(batch.get(0));
         }
 
         return Optional.empty();

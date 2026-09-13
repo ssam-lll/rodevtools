@@ -300,6 +300,9 @@ function XRayDashboard() {
         setActiveGame(data);
         setLoading(false);
         if (data && data.universeId) {
+          if (String(universeId) !== String(data.universeId)) {
+            router.replace(`/xray?universeId=${data.universeId}`);
+          }
           setHistory((prevHistory) => {
             const filtered = prevHistory.filter((item) => String(item.id) !== String(data.universeId));
             const updated = [{ id: String(data.universeId), name: data.name || String(data.universeId) }, ...filtered].slice(0, 5);
@@ -335,7 +338,7 @@ function XRayDashboard() {
     setShowSuggestions(false);
 
     // If user entered a URL, validate that it is a Roblox game URL
-    if (/^https?:\/\//i.test(trimmed)) {
+    if (trimmed.includes("roblox.com") || /^https?:\/\//i.test(trimmed)) {
       const extractedPlaceId = extractPlaceIdFromUrl(trimmed);
       if (extractedPlaceId) {
         triggerSearch(extractedPlaceId);
