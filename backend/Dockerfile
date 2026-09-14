@@ -1,5 +1,5 @@
-# Etapa 1: Build con Gradle y JDK 17
-FROM eclipse-temurin:17-jdk-alpine AS builder
+# Etapa 1: Build con Gradle y JDK 21
+FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /app
 
 # Copiar archivos de configuración de Gradle
@@ -17,8 +17,8 @@ RUN ./gradlew dependencies --no-daemon || true
 COPY src src
 RUN ./gradlew bootJar -x test --no-daemon
 
-# Etapa 2: Runtime ligero con JRE 17
-FROM eclipse-temurin:17-jre-alpine
+# Etapa 2: Runtime ligero con JRE 21
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Crear usuario no root por seguridad
