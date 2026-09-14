@@ -3,6 +3,7 @@ package com.rodevtools.backend.repository;
 import com.rodevtools.backend.model.GameSnapshot;
 import com.rodevtools.backend.repository.projection.DailyAnalyticsProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -38,7 +39,7 @@ public interface GameSnapshotRepository extends JpaRepository<GameSnapshot, Long
             "ORDER BY date ASC", nativeQuery = true)
     List<DailyAnalyticsProjection> getDailyAnalytics(@Param("universeId") Long universeId);
 
-    @org.springframework.data.jpa.repository.Modifying
+    @Modifying
     @Query(value = "INSERT INTO game_daily_analytics (universe_id, date, average_playing, max_visits, min_playing, max_playing, created_at) " +
             "SELECT " +
             "    g.universe_id, " +
@@ -58,9 +59,11 @@ public interface GameSnapshotRepository extends JpaRepository<GameSnapshot, Long
             "    max_playing = EXCLUDED.max_playing", nativeQuery = true)
     int consolidateSnapshotsBefore(@Param("cutoffTimestamp") Instant cutoffTimestamp);
 
-    @org.springframework.data.jpa.repository.Modifying
+    @Modifying
     @Query("DELETE FROM GameSnapshot g WHERE g.snapshotTimestamp < :cutoffTimestamp")
     int deleteSnapshotsBefore(@Param("cutoffTimestamp") Instant cutoffTimestamp);
 
     long countBySnapshotTimestampBefore(Instant cutoffTimestamp);
+
+    void deleteByGameUniverseId(Long universeId);
 }

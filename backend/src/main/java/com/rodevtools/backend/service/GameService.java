@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
@@ -66,7 +67,9 @@ public class GameService {
         return gameRepository.save(game);
     }
 
+    @Transactional
     public void delete(Long universeId) {
+        gameSnapshotRepository.deleteByGameUniverseId(universeId);
         gameRepository.deleteById(universeId);
     }
 
@@ -211,30 +214,21 @@ public class GameService {
             return byRootPlace;
         }
 
-        Optional<Long> universeIdOpt = robloxApiService.resolvePlaceIdToUniverseId(id);
-        if (universeIdOpt.isPresent()) {
-            Long universeId = universeIdOpt.get();
-            Optional<Game> byUniverse = gameRepository.findById(universeId);
-            if (byUniverse.isPresent()) {
-                return byUniverse;
-            }
-            Game synced = syncGame(universeId);
-            if (synced != null) {
-                return Optional.of(synced);
-            }
-        }
-
         Optional<Game> byUniverse = gameRepository.findById(id);
         if (byUniverse.isPresent()) {
             return byUniverse;
         }
 
-        Game synced = syncGame(id);
-        return Optional.ofNullable(synced);
+        Optional<Game> fromPlace = resolveByPlaceId(id);
+        if (fromPlace.isPresent()) {
+            return fromPlace;
+        }
+
+        return Optional.ofNullable(syncGame(id));
     }
 
-    public Game syncGame(Long id) {
-        Optional<RobloxGameDataDto> apiDataOpt = robloxApiService.fetchGameData(id);
+    public Game syncGame(Long universeId) {
+        Optional<RobloxGameDataDto> apiDataOpt = robloxApiService.fetchGameByUniverseId(universeId);
 
         if (apiDataOpt.isEmpty()) {
             return null;

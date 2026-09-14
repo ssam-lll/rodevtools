@@ -31,7 +31,7 @@ public class RobloxApiService {
         }
 
         List<RobloxGameDataDto> allResults = new ArrayList<>();
-        int chunkSize = 50; // Roblox API accepts a maximum of 50 IDs per request
+        int chunkSize = 50;
 
         for (int i = 0; i < universeIds.size(); i += chunkSize) {
             List<Long> chunk = universeIds.subList(i, Math.min(i + chunkSize, universeIds.size()));
@@ -140,6 +140,14 @@ public class RobloxApiService {
         return Optional.empty();
     }
 
+    public Optional<RobloxGameDataDto> fetchGameByUniverseId(Long universeId) {
+        if (universeId == null || universeId <= 0) {
+            return Optional.empty();
+        }
+        List<RobloxGameDataDto> batch = fetchGamesBatch(List.of(universeId));
+        return batch.isEmpty() ? Optional.empty() : Optional.of(batch.get(0));
+    }
+
     public Optional<RobloxGameDataDto> fetchGameData(Long id) {
         if (id == null || id <= 0) {
             return Optional.empty();
@@ -147,17 +155,9 @@ public class RobloxApiService {
 
         Optional<Long> resolvedUniverseId = resolvePlaceIdToUniverseId(id);
         if (resolvedUniverseId.isPresent()) {
-            List<RobloxGameDataDto> resolvedBatch = fetchGamesBatch(List.of(resolvedUniverseId.get()));
-            if (!resolvedBatch.isEmpty()) {
-                return Optional.of(resolvedBatch.get(0));
-            }
+            return fetchGameByUniverseId(resolvedUniverseId.get());
         }
 
-        List<RobloxGameDataDto> batch = fetchGamesBatch(List.of(id));
-        if (!batch.isEmpty()) {
-            return Optional.of(batch.get(0));
-        }
-
-        return Optional.empty();
+        return fetchGameByUniverseId(id);
     }
 }

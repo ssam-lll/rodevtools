@@ -337,13 +337,14 @@ function XRayDashboard() {
 
     setShowSuggestions(false);
 
+    const extractedPlaceId = extractPlaceIdFromUrl(trimmed);
+    if (extractedPlaceId) {
+      triggerSearch(extractedPlaceId);
+      return;
+    }
+
     if (trimmed.includes("roblox.com") || /^https?:\/\//i.test(trimmed)) {
-      const extractedPlaceId = extractPlaceIdFromUrl(trimmed);
-      if (extractedPlaceId) {
-        triggerSearch(extractedPlaceId);
-      } else {
-        setToastMessage("Please enter a valid Roblox game URL (e.g. roblox.com/games/...)");
-      }
+      setToastMessage("Please enter a valid Roblox game URL (e.g. roblox.com/games/...)");
       return;
     }
 
