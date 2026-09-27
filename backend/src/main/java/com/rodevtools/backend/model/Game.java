@@ -12,7 +12,10 @@ import java.time.LocalDateTime;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "games", indexes = {
-    @Index(name = "idx_games_root_place_id", columnList = "root_place_id")
+    @Index(name = "idx_games_root_place_id", columnList = "root_place_id"),
+    @Index(name = "idx_games_playing", columnList = "playing"),
+    @Index(name = "idx_games_last_synced_at", columnList = "last_synced_at"),
+    @Index(name = "idx_games_name", columnList = "name")
 })
 @Data
 @NoArgsConstructor

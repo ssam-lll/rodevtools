@@ -2,14 +2,7 @@ package com.rodevtools.backend.controller;
 
 import com.rodevtools.backend.dto.GameResponseDto;
 import com.rodevtools.backend.dto.RadarRequestDto;
-import com.rodevtools.backend.model.Game;
-import com.rodevtools.backend.model.User;
-import com.rodevtools.backend.model.UserRadar;
-import com.rodevtools.backend.repository.UserRadarRepository;
-import com.rodevtools.backend.repository.UserRepository;
-import com.rodevtools.backend.service.GameService;
-import com.rodevtools.backend.exception.ResourceNotFoundException;
-import jakarta.transaction.Transactional;
+import com.rodevtools.backend.service.UserRadarService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,57 +15,24 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserRadarController {
 
-    private final UserRadarRepository userRadarRepository;
-    private final UserRepository userRepository;
-    private final GameService gameService;
+    private final UserRadarService userRadarService;
 
     @GetMapping
-    public ResponseEntity<List<GameResponseDto>> getRadarList(@RequestAttribute("userId") String userIdStr){
-        UUID userId = UUID.fromString(userIdStr);
-
-        List<GameResponseDto> trackedGames = userRadarRepository.findByUserId(userId).stream()
-                .map(radar -> gameService.toGameResponseDto(radar.getGame()))
-                .toList();
-
-        return ResponseEntity.ok(trackedGames);
+    public ResponseEntity<List<GameResponseDto>> getRadarList(@RequestAttribute("userId") String userIdStr) {
+        return ResponseEntity.ok(userRadarService.getRadarGames(UUID.fromString(userIdStr)));
     }
 
     @PostMapping
-    @Transactional
-    public ResponseEntity<?> addToRadar(@RequestAttribute("userId") String userIdStr, @RequestBody RadarRequestDto request){
-        UUID userId = UUID.fromString(userIdStr);
-        Long universeId = request.universeId();
-
-        User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        Game game = gameService.findById(universeId).orElseGet(() ->  gameService.syncGame(universeId));
-
-        if (game == null){
-            throw new ResourceNotFoundException("The game could not be found or synchronized with ID " + universeId);
-        }
-
-        boolean alreadyTracking = userRadarRepository.findByUserId(userId).stream().anyMatch(r -> r.getGame().getUniverseId().equals(universeId));
-
-        if (alreadyTracking){
-            return ResponseEntity.ok("Game already tracked in radar");
-        }
-
-        UserRadar userRadar = new UserRadar();
-        userRadar.setUser(user);
-        userRadar.setGame(game);
-
-        userRadarRepository.save(userRadar);
-
-        return ResponseEntity.ok("Game added to radar");
+    public ResponseEntity<String> addToRadar(@RequestAttribute("userId") String userIdStr,
+                                            @RequestBody RadarRequestDto request) {
+        String result = userRadarService.addToRadar(UUID.fromString(userIdStr), request.universeId());
+        return ResponseEntity.ok(result);
     }
+
     @DeleteMapping("/{universeId}")
-    @Transactional
-    public ResponseEntity<?> removeFromRadar(@RequestAttribute("userId") String userIdStr, @PathVariable Long universeId) {
-        UUID userId = UUID.fromString(userIdStr);
-        userRadarRepository.deleteByUserIdAndGameUniverseId(userId, universeId);
+    public ResponseEntity<String> removeFromRadar(@RequestAttribute("userId") String userIdStr,
+                                                 @PathVariable Long universeId) {
+        userRadarService.removeFromRadar(UUID.fromString(userIdStr), universeId);
         return ResponseEntity.ok("Game deleted from radar");
     }
-
-
-
 }

@@ -62,7 +62,6 @@ export default function Navbar() {
     { name: "DevEx Calculator", href: "/devex", icon: DollarSign },
   ];
 
-  // Find current active item
   const activeItem = navItems.find((item) => item.href === pathname) || navItems[0];
   const ActiveIcon = activeItem.icon;
 
@@ -71,14 +70,12 @@ export default function Navbar() {
       <header className="sticky top-0 z-50 w-full border-b border-outline-variant/30 bg-surface/90 backdrop-blur-md">
         <div className="container-max h-16 flex items-center justify-between gap-md">
           
-          {/* Left Column: Brand Logo */}
           <div className="flex items-center justify-start">
             <Link href="/" className="group select-none">
               <Logo size="md" />
             </Link>
           </div>
 
-          {/* Center Column: Clean Horizontal Navigation Links */}
           <nav className="flex items-center gap-1 md:gap-2 overflow-x-auto py-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -100,7 +97,6 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Right Column: User Session / Sign In */}
           <div className="flex items-center justify-end">
             {user ? (
               <div className="flex items-center gap-2 bg-surface-container-high/60 border border-outline-variant/40 rounded-lg p-1.5 pr-2.5 shadow-sm">

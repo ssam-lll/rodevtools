@@ -39,20 +39,13 @@ public class GameController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getUniverses(
-            @RequestParam(value = "id", required = false) String id,
+    public ResponseEntity<Page<GameResponseDto>> getUniverses(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sort", defaultValue = "playing") String sortField,
             @RequestParam(value = "dir", defaultValue = "desc") String sortDir,
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "category", required = false) String category) {
-
-        if (id != null && !id.isBlank()) {
-            return gameService.resolveGame(id)
-                    .map(game -> ResponseEntity.ok(gameService.getXRayDetails(game)))
-                    .orElseGet(() -> ResponseEntity.notFound().build());
-        }
 
         if (size > 100) size = 100;
         if (size < 1) size = 1;
@@ -69,8 +62,15 @@ public class GameController {
         return ResponseEntity.ok(responsePage);
     }
 
+    @GetMapping("/{universeId}")
+    public ResponseEntity<XRayDetailsDto> getUniverseById(@PathVariable String universeId) {
+        return gameService.resolveGame(universeId)
+                .map(game -> ResponseEntity.ok(gameService.getXRayDetails(game)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/rising")
-    public ResponseEntity<?> getRisingStars(
+    public ResponseEntity<Page<RisingStarResponseDto>> getRisingStars(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sort", defaultValue = "growth24h") String sortField,

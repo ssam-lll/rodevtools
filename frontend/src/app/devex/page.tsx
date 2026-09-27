@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
-// Cashout method definitions with fee metadata
 const CASHOUT_METHODS = [
   {
     id: "paypal",
@@ -63,23 +62,19 @@ const CASHOUT_METHODS = [
 export default function DevExPage() {
   const [activeTab, setActiveTab] = useState<"devex" | "transfer">("devex");
   
-  // DevEx Calculator State
   const [robux, setRobux] = useState<string>("100000");
   const [usd, setUsd] = useState<string>("350");
   const [selectedMethod, setSelectedMethod] = useState<string>("paypal");
 
-  // Transfer Calculator State
   const [transferRobux, setTransferRobux] = useState<string>("10000");
   const [hasPremium, setHasPremium] = useState<boolean>(false);
   const [transferMode, setTransferMode] = useState<"send" | "receive">("send");
 
-  // Constants
   const DEVEX_RATE = 0.0035;
   const MIN_ELIGIBLE_ROBUX = 30000;
   const BUYING_RATE = 0.0125;
-  const TAX_RATE = 30; // 30% US withholding tax baseline
+  const TAX_RATE = 30;
 
-  // Dynamic Payout Fee Calculation
   const getMethodFee = (methodId: string, amountUsd: number) => {
     if (amountUsd <= 0) return 0;
     switch (methodId) {
@@ -151,7 +146,6 @@ export default function DevExPage() {
 
   const isEligible = currentRobux >= MIN_ELIGIBLE_ROBUX;
 
-  // Transfer Calculations
   const transferAmount = parseFloat(transferRobux) || 0;
   const marketplaceFeeRate = hasPremium ? 10 : 30;
 
@@ -195,7 +189,6 @@ export default function DevExPage() {
     <main className="relative flex-1 bg-background text-foreground p-6 md:p-8">
       <div className="container-max z-10">
         
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-outline-variant/30 pb-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground font-sans">Calculator</h1>
@@ -204,7 +197,6 @@ export default function DevExPage() {
             </p>
           </div>
 
-          {/* Mode Tabs */}
           <div className="flex items-center gap-1 p-1 bg-surface-container border border-outline-variant rounded-lg self-start md:self-auto">
             <button
               onClick={() => setActiveTab("devex")}
@@ -231,14 +223,11 @@ export default function DevExPage() {
           </div>
         </div>
 
-        {/* Tab 1: DevEx Calculator */}
         {activeTab === "devex" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
             
-            {/* Left Column (Inputs & Payout Method) - 7 cols */}
             <div className="lg:col-span-7 space-y-6">
               
-              {/* Conversion Inputs */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base font-bold">DevEx Conversion</CardTitle>
@@ -247,7 +236,6 @@ export default function DevExPage() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                     
-                    {/* Robux Input */}
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Robux Amount</label>
                       <div className="relative">
@@ -264,7 +252,6 @@ export default function DevExPage() {
                       </div>
                     </div>
 
-                    {/* USD Equivalent Input */}
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Gross USD</label>
                       <div className="relative">
@@ -282,7 +269,6 @@ export default function DevExPage() {
                     </div>
                   </div>
 
-                  {/* Preset Buttons */}
                   <div className="pt-2">
                     <span className="text-xs text-on-surface-variant block mb-2 font-medium">Quick Presets:</span>
                     <div className="flex flex-wrap gap-2">
@@ -305,7 +291,6 @@ export default function DevExPage() {
                 </CardContent>
               </Card>
 
-              {/* Cashout Method Selector */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base font-bold">Payout Method & Fees</CardTitle>
@@ -340,7 +325,6 @@ export default function DevExPage() {
                     })}
                   </div>
 
-                  {/* Method Summary details */}
                   <div className="p-3.5 rounded-lg bg-surface-container border border-outline-variant flex flex-col sm:flex-row justify-between gap-3 text-xs">
                     <div className="space-y-1">
                       <div className="font-semibold text-foreground flex items-center gap-1.5">
@@ -357,7 +341,6 @@ export default function DevExPage() {
                 </CardContent>
               </Card>
 
-              {/* Economic Spread Context */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base font-bold">Roblox vs. Developer Revenue Share</CardTitle>
@@ -385,10 +368,8 @@ export default function DevExPage() {
 
             </div>
 
-            {/* Right Column (Receipt & Payout Summary) - 5 cols */}
             <div className="lg:col-span-5 space-y-6">
               
-              {/* Below minimum threshold warning if applicable */}
               {!isEligible && (
                 <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 text-amber-400 text-xs flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -398,7 +379,6 @@ export default function DevExPage() {
                 </div>
               )}
 
-              {/* Net Payout Summary Card */}
               <Card className="border-outline-variant/60 shadow-md">
                 <CardHeader className="pb-3 border-b border-outline-variant/30">
                   <CardTitle className="text-base font-bold">Payout Summary</CardTitle>
@@ -406,7 +386,6 @@ export default function DevExPage() {
                 </CardHeader>
                 <CardContent className="space-y-5 pt-4">
                   
-                  {/* Big Hero Value */}
                   <div className="p-4 rounded-xl bg-surface-container border border-outline-variant/40 text-center">
                     <span className="text-xs text-on-surface-variant uppercase tracking-wider block mb-1">Estimated Take-Home (USD)</span>
                     <div className="text-3xl font-bold font-mono text-emerald-400">
@@ -417,7 +396,6 @@ export default function DevExPage() {
                     </span>
                   </div>
 
-                  {/* Distribution Progress Bar */}
                   <div className="space-y-1.5">
                     <div className="flex h-2 rounded-full overflow-hidden bg-surface-container-highest">
                       <div 
@@ -454,7 +432,6 @@ export default function DevExPage() {
                     </div>
                   </div>
 
-                  {/* Itemized Calculation List */}
                   <div className="space-y-2 pt-2 border-t border-outline-variant/30 text-xs">
                     <div className="flex justify-between text-on-surface-variant">
                       <span>Gross DevEx Amount:</span>
@@ -481,11 +458,9 @@ export default function DevExPage() {
           </div>
         )}
 
-        {/* Tab 2: Robux Transfer Tax */}
         {activeTab === "transfer" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
             
-            {/* Left Column: Transfer Controls (7 cols) */}
             <div className="lg:col-span-7 space-y-6">
               <Card>
                 <CardHeader>
@@ -494,7 +469,6 @@ export default function DevExPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   
-                  {/* Mode Selector */}
                   <div className="grid grid-cols-2 gap-2 p-1 bg-surface-container border border-outline-variant/30 rounded-lg">
                     <button
                       type="button"
@@ -522,7 +496,6 @@ export default function DevExPage() {
                     </button>
                   </div>
 
-                  {/* Transfer Robux Input */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                       {transferMode === "send" ? "Robux to Transfer (Gross)" : "Target Robux to Receive (Net)"}
@@ -540,7 +513,6 @@ export default function DevExPage() {
                       </span>
                     </div>
 
-                    {/* Presets */}
                     <div className="flex flex-wrap gap-2 pt-1">
                       {[1000, 5000, 10000, 50000, 100000].map((val) => (
                         <button
@@ -555,7 +527,6 @@ export default function DevExPage() {
                     </div>
                   </div>
 
-                  {/* Premium Seller Toggle */}
                   <div className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container/40 border border-outline-variant/30">
                     <div className="flex items-center gap-2">
                       <Crown className={`w-4 h-4 ${hasPremium ? "text-amber-400" : "text-on-surface-variant/40"}`} />
@@ -580,7 +551,6 @@ export default function DevExPage() {
               </Card>
             </div>
 
-            {/* Right Column: Comparative Transfer Results (5 cols) */}
             <div className="lg:col-span-5 space-y-6">
               <Card>
                 <CardHeader className="pb-3 border-b border-outline-variant/30">
@@ -589,7 +559,6 @@ export default function DevExPage() {
                 </CardHeader>
                 <CardContent className="space-y-4 pt-4">
                   
-                  {/* Scenario 1: P2P Transfer */}
                   <div className="p-3.5 rounded-lg bg-surface-container/40 border border-outline-variant/30 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-foreground">Direct Player-to-Player</span>
@@ -613,7 +582,6 @@ export default function DevExPage() {
                     </div>
                   </div>
 
-                  {/* Scenario 2: Marketplace Sale */}
                   <div className="p-3.5 rounded-lg bg-surface-container/40 border border-outline-variant/30 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-foreground">Marketplace / Item Sale</span>

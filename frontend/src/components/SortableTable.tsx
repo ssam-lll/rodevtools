@@ -27,7 +27,6 @@ interface SortableTableProps<T> {
   emptyMessage?: string;
   rowKey: (item: T) => string;
   rowClassName?: string;
-  // Server-side pagination props
   currentPage?: number;
   totalPages?: number;
   totalElements?: number;
@@ -228,7 +227,6 @@ export default function SortableTable<T>({
   const processedData = useMemo(() => {
     let result = [...data];
 
-    // Apply filters
     Object.entries(filters).forEach(([key, value]) => {
       if (!value) return;
       const col = columns.find((c) => c.key === key);
@@ -239,7 +237,6 @@ export default function SortableTable<T>({
       result = result.filter((item) => {
         const sortVal = col.sortValue ? col.sortValue(item) : "";
         
-        // Support Min-Max filtering for numeric columns
         if (col.isNumeric && typeof sortVal === "number" && trimmedVal.startsWith("{")) {
           try {
             const { min, max } = JSON.parse(trimmedVal);
@@ -249,11 +246,9 @@ export default function SortableTable<T>({
             if (maxNum !== null && sortVal > maxNum) return false;
             return true;
           } catch (e) {
-            // fallback
           }
         }
 
-        // Support mathematical operator filtering for numeric values
         if (typeof sortVal === "number") {
           const operatorMatch = trimmedVal.match(/^(>=|<=|>|<|=)\s*(-?\d+(\.\d+)?)$/);
           if (operatorMatch) {
@@ -271,7 +266,6 @@ export default function SortableTable<T>({
       });
     });
 
-    // Apply sorting
     if (sortKey) {
       const col = columns.find((c) => c.key === sortKey);
       if (col?.sortValue) {
@@ -295,7 +289,6 @@ export default function SortableTable<T>({
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container-lowest/40 backdrop-blur-sm">
-      {/* Active filters bar */}
       {activeFilterCount > 0 && (
         <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/30 bg-surface-container/30">
           <Filter className="w-3.5 h-3.5 text-primary" />
@@ -378,7 +371,6 @@ export default function SortableTable<T>({
                       </button>
                     )}
                   </div>
-                  {/* Floating popover filter */}
                   {col.filterable && activeFilter === col.key && (
                     <>
                       <div 
@@ -458,7 +450,6 @@ export default function SortableTable<T>({
         </table>
       </div>
 
-      {/* Pagination Controls */}
       {hasPagination && (
         <div className="flex items-center justify-between px-4 py-3.5 border-t border-outline-variant/30 bg-surface-container/30">
           <span className="text-xs text-on-surface-variant font-mono">
@@ -475,7 +466,6 @@ export default function SortableTable<T>({
             >
               ← Previous
             </button>
-            {/* Page number buttons (show up to 5) */}
             {(() => {
               const pages: number[] = [];
               const start = Math.max(0, (currentPage || 0) - 2);

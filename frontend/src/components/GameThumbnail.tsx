@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { thumbnailService } from "@/services/thumbnailService";
 
 interface GameThumbnailProps {
   universeId: string;
@@ -8,7 +9,6 @@ interface GameThumbnailProps {
   className?: string;
 }
 
-// In-memory cache to avoid duplicate fetches across renders
 const thumbnailCache: Record<string, string> = {};
 
 export default function GameThumbnail({ universeId, size = "md", className = "" }: GameThumbnailProps) {
@@ -39,8 +39,7 @@ export default function GameThumbnail({ universeId, size = "md", className = "" 
 
     let cancelled = false;
 
-    fetch(`/api/thumbnails?universeIds=${universeId}&size=150x150`)
-      .then((res) => res.json())
+    thumbnailService.getThumbnails(universeId, "150x150")
       .then((data) => {
         if (cancelled) return;
         const thumb = data?.data?.[0];

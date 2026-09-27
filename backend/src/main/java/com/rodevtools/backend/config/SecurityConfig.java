@@ -1,9 +1,10 @@
 package com.rodevtools.backend.config;
 
-import com.rodevtools.backend.security.JwtAuthFilter;
+import com.rodevtools.backend.security.AuthFilter;
 import com.rodevtools.backend.security.RateLimitFilter;
 import com.rodevtools.backend.service.TokenService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,14 +26,17 @@ public class SecurityConfig {
     private final TokenService tokenService;
     private final RateLimitFilter rateLimitFilter;
 
+    @Value("${app.api-key:}")
+    private String apiKey;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
     }
 
     @Bean
-    public JwtAuthFilter jwtAuthFilter() {
-        return new JwtAuthFilter(tokenService);
+    public AuthFilter authFilter() {
+        return new AuthFilter(tokenService, apiKey);
     }
 
     @Bean
@@ -61,14 +65,12 @@ public class SecurityConfig {
 
                 .requestMatchers(HttpMethod.GET, "/api/universes", "/api/universes/**").permitAll()
 
-                .requestMatchers("/api/external/**").permitAll()
-
                 .anyRequest().authenticated()
             )
 
             .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
 
-            .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(authFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

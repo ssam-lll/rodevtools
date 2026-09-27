@@ -3,7 +3,7 @@ package com.rodevtools.backend.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.Set;
 
@@ -12,7 +12,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ThumbnailController {
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
     private static final Set<String> ALLOWED_SIZES = Set.of(
         "150x150", "256x256", "420x420", "512x512"
@@ -43,7 +43,10 @@ public class ThumbnailController {
                 + "&returnPolicy=PlaceHolder&size=" + size + "&format=Png&isCircular=false";
 
         try {
-            String response = restTemplate.getForObject(robloxUrl, String.class);
+            String response = restClient.get()
+                    .uri(robloxUrl)
+                    .retrieve()
+                    .body(String.class);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.internalServerError()

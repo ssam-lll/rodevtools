@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { X, User, Lock, Loader2 } from "lucide-react";
+import { authService } from "@/services/authService";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -27,38 +28,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setMessage(null);
 
     try {
-      const endpoint = isSignUp ? "/api/auth/register" : "/api/auth/login";
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      let data: any = null;
-      const text = await response.text();
-      try {
-        data = text ? JSON.parse(text) : {};
-      } catch {
-        data = null;
-      }
-
-      if (!response.ok) {
-        const errorMsg =
-          data?.message ||
-          data?.error ||
-          (text && text.trim().length > 0 ? text : null) ||
-          `Request failed with status ${response.status}`;
-        throw new Error(errorMsg);
-      }
-
       if (isSignUp) {
+        await authService.register({ email, password });
         setMessage("Registration successful! You can now sign in.");
         setIsSignUp(false);
         setEmail("");
         setPassword("");
       } else {
+        const data = await authService.login({ email, password });
         localStorage.setItem("user", JSON.stringify({
           username: data?.email || email,
           email: data?.email || email,
@@ -90,7 +67,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         zIndex: 9999 
       }}
     >
-      {/* Backdrop */}
       <div 
         onClick={onClose}
         style={{
@@ -107,17 +83,15 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         }}
       />
 
-      {/* Modal Container */}
       <div 
         className="relative overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low p-8 shadow-2xl z-10 transition-all duration-300 transform scale-100"
         style={{
           width: 'calc(100% - 2rem)',
-          maxWidth: '448px', // Equivalent to max-w-md
+          maxWidth: '448px',
           boxSizing: 'border-box'
         }}
       >
 
-        {/* Close Button */}
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-on-surface-variant hover:text-foreground hover:bg-surface-container-high p-1.5 rounded-full transition-colors"
@@ -125,7 +99,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <X className="w-4 h-4" />
         </button>
 
-        {/* Header */}
         <div className="flex flex-col items-center mb-6 text-center">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-container to-inverse-primary border border-white/10 flex items-center justify-center shadow-[0_0_12px_rgba(0,175,244,0.2)] mb-3 select-none">
             <span className="text-white font-black text-[18px] leading-none font-sans">R</span>
@@ -138,7 +111,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleAuth} className="space-y-4">
           <div>
             <label className="block text-body-sm font-medium text-on-surface-variant mb-1.5">
@@ -205,7 +177,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </Button>
         </form>
 
-        {/* Toggle Mode */}
         <div className="mt-6 text-center text-body-sm text-on-surface-variant">
           {isSignUp ? (
             <>

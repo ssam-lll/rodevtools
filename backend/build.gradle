@@ -40,6 +40,9 @@ dependencies {
 
     // Rate Limiting (Bucket4j)
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.14.0'
+
+    // In-memory cache with TTL for rate limit buckets
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 }
 
 tasks.named('test') {

@@ -53,7 +53,6 @@ export default function Sidebar() {
     };
   }, []);
 
-  // Close mobile drawer when route changes
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
@@ -95,7 +94,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Top Header Bar */}
       <div className="md:hidden sticky top-0 z-40 w-full flex items-center justify-between px-4 py-3 bg-surface-container-lowest/95 border-b border-outline-variant/30 backdrop-blur-md">
         <Link href="/" className="select-none">
           <Logo size="sm" />
@@ -109,7 +107,6 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Mobile Backdrop */}
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
@@ -117,7 +114,6 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Main Sidebar (Desktop sticky sidebar, Mobile slide-in drawer) */}
       <aside
         className={`
           fixed md:sticky top-0 left-0 z-50 md:z-30
@@ -128,7 +124,6 @@ export default function Sidebar() {
           ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
-        {/* Top: Logo & Platform Identity */}
         <div className="p-5 border-b border-outline-variant/20">
           <div className="flex items-center justify-between">
             <Link href="/" className="select-none block">
@@ -145,9 +140,7 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Center: Navigation List */}
         <div className="flex-1 px-3 py-4 overflow-y-auto space-y-5">
-          {/* Home Link */}
           <div>
             <Link
               href="/"
@@ -172,7 +165,6 @@ export default function Sidebar() {
             </Link>
           </div>
 
-          {/* Games Group */}
           <div>
             <span className="px-3 text-[11px] font-semibold tracking-wider text-on-surface-variant/60 uppercase block mb-1.5">
               Games
@@ -214,7 +206,6 @@ export default function Sidebar() {
             </nav>
           </div>
 
-          {/* More Group */}
           <div>
             <span className="px-3 text-[11px] font-semibold tracking-wider text-on-surface-variant/60 uppercase block mb-1.5">
               More
@@ -257,7 +248,6 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Bottom: User Session / Sign In Profile Card */}
         <div className="p-4 border-t border-outline-variant/30 bg-surface-container-low/40">
           {user ? (
             <div className="p-2.5 rounded-xl bg-surface-container border border-outline-variant/40 flex items-center justify-between gap-2 shadow-sm">
@@ -292,7 +282,6 @@ export default function Sidebar() {
             </button>
           )}
 
-          {/* Minimal Repository link */}
           <div className="mt-3 flex items-center justify-end px-1 text-xs text-on-surface-variant/60">
             <a
               href="https://github.com/ssam-lll/rodevtools"
@@ -307,7 +296,6 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Auth Modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </>
   );

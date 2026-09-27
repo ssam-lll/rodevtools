@@ -5,24 +5,8 @@ import { useRouter } from "next/navigation";
 import { TrendingUp, Search, ArrowUpRight } from "lucide-react";
 import GameThumbnail from "@/components/GameThumbnail";
 import SortableTable, { ColumnDef } from "@/components/SortableTable";
-
-interface RisingStarGame {
-  universeId: string;
-  name: string;
-  creator: string;
-  activePlayers: number;
-  growth24h: number;
-  monthlyRevenueEst: number;
-  healthScore: number;
-}
-
-interface PaginatedResponse {
-  content: RisingStarGame[];
-  totalPages: number;
-  totalElements: number;
-  number: number; // current page (0-indexed)
-  size: number;
-}
+import type { RisingStarGame, PaginatedResponse } from "@/types/universe";
+import { universeService } from "@/services/universeService";
 
 export default function RisingPage() {
   const router = useRouter();
@@ -37,31 +21,25 @@ export default function RisingPage() {
   const [sortKey, setSortKey] = useState("playing");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  // Debounce search input (300ms)
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setCurrentPage(0); // Reset to first page on search
+      setCurrentPage(0);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
   const fetchGames = useCallback(() => {
     setLoading(true);
-    const params = new URLSearchParams({
-      page: currentPage.toString(),
-      size: pageSize.toString(),
+
+    universeService.getRisingGames({
+      page: currentPage,
+      size: pageSize,
       sort: sortKey,
       dir: sortDir,
-    });
-
-    if (debouncedSearch) {
-      params.set("search", debouncedSearch);
-    }
-
-    fetch(`/api/universes/rising?${params}`)
-      .then((res) => res.json())
-      .then((data: PaginatedResponse) => {
+      search: debouncedSearch,
+    })
+      .then((data) => {
         if (data.content && Array.isArray(data.content)) {
           setGames(data.content);
           setTotalPages(data.totalPages);
@@ -92,12 +70,10 @@ export default function RisingPage() {
     return new Intl.NumberFormat("en-US").format(val);
   };
 
-  // Dynamic statistics — from current page data
   const topGaining = games.length > 0
     ? [...games].sort((a, b) => b.growth24h - a.growth24h)[0]
     : null;
 
-  // Table column definitions
   const columns: ColumnDef<RisingStarGame>[] = [
     {
       key: "thumbnail",
@@ -191,7 +167,6 @@ export default function RisingPage() {
   return (
     <main className="relative flex-1 bg-background text-foreground p-6 md:p-8">
       <div className="container-max z-10">
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-outline-variant/30 pb-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Rising Stars</h1>
@@ -200,7 +175,6 @@ export default function RisingPage() {
             </p>
           </div>
 
-          {/* Search bar */}
           <div className="relative w-full md:w-80">
             <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
               <Search className="w-4 h-4 text-on-surface-variant" />
@@ -215,7 +189,6 @@ export default function RisingPage() {
           </div>
         </div>
 
-        {/* Quick Stats - Top Gaining Game (horizontal card) */}
         <div className="mb-6">
           <button
             onClick={() => topGaining && router.push(`/xray?universeId=${topGaining.universeId}`)}
@@ -241,7 +214,6 @@ export default function RisingPage() {
           </button>
         </div>
 
-        {/* Interactive Data Table with Sorting + Pagination */}
         <SortableTable
           data={games}
           columns={columns}

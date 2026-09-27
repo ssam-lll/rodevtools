@@ -34,7 +34,6 @@ export default function Home() {
     <main className="flex-1 bg-background text-foreground flex flex-col justify-center p-6 md:p-12">
       <div className="max-w-6xl w-full mx-auto flex-1 flex flex-col justify-center py-8">
         
-        {/* Simple & Clean Hero */}
         <div className="flex flex-col items-center text-center mb-12">
           <div className="mb-4">
             <Logo size="lg" />
@@ -45,7 +44,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* 4 Core Tool Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {tools.map((tool, idx) => {
             const Icon = tool.icon;

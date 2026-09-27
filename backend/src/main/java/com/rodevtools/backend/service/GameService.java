@@ -22,9 +22,12 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -297,8 +300,14 @@ public class GameService {
         List<Game> gamesToSave = new ArrayList<>();
         List<GameSnapshot> snapshotsToSave = new ArrayList<>();
 
+        List<Long> incomingIds = dtos.stream()
+                .map(RobloxGameDataDto::universeId)
+                .toList();
+        Map<Long, Game> existingGames = gameRepository.findAllById(incomingIds).stream()
+                .collect(Collectors.toMap(Game::getUniverseId, Function.identity()));
+
         for (RobloxGameDataDto dto : dtos) {
-            Game game = gameRepository.findById(dto.universeId()).orElse(new Game());
+            Game game = existingGames.getOrDefault(dto.universeId(), new Game());
             game.setUniverseId(dto.universeId());
             game.setRootPlaceId(dto.rootPlaceId());
             game.setGameName(dto.gameName());

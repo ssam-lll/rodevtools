@@ -9,28 +9,41 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitFilter.class);
 
-    private final Map<String, Bucket> loginBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> registerBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> thumbnailBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> generalBuckets = new ConcurrentHashMap<>();
+    private final Cache<String, Bucket> loginBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(30))
+            .maximumSize(10_000)
+            .build();
+    private final Cache<String, Bucket> registerBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofHours(2))
+            .maximumSize(10_000)
+            .build();
+    private final Cache<String, Bucket> thumbnailBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(5))
+            .maximumSize(20_000)
+            .build();
+    private final Cache<String, Bucket> generalBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(20_000)
+            .build();
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
         String path = request.getServletPath();
@@ -58,19 +71,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private Bucket resolveBucket(String path, String clientIp) {
         if (path.startsWith("/auth/login")) {
-            return loginBuckets.computeIfAbsent(clientIp, k -> createBucket(5, Duration.ofMinutes(15)));
+            return loginBuckets.get(clientIp, k -> createBucket(5, Duration.ofMinutes(15)));
         }
 
         if (path.startsWith("/auth/register")) {
-            return registerBuckets.computeIfAbsent(clientIp, k -> createBucket(3, Duration.ofHours(1)));
+            return registerBuckets.get(clientIp, k -> createBucket(3, Duration.ofHours(1)));
         }
 
         if (path.startsWith("/api/thumbnails")) {
-            return thumbnailBuckets.computeIfAbsent(clientIp, k -> createBucket(500, Duration.ofMinutes(1)));
+            return thumbnailBuckets.get(clientIp, k -> createBucket(500, Duration.ofMinutes(1)));
         }
 
         if (path.startsWith("/api/")) {
-            return generalBuckets.computeIfAbsent(clientIp, k -> createBucket(60, Duration.ofMinutes(1)));
+            return generalBuckets.get(clientIp, k -> createBucket(60, Duration.ofMinutes(1)));
         }
 
         return null;

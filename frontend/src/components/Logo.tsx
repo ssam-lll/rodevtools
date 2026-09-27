@@ -6,7 +6,6 @@ interface LogoProps {
 }
 
 export default function Logo({ size = "md", className = "" }: LogoProps) {
-  // Styles based on size
   const sizes = {
     sm: {
       icon: "w-7 h-7 rounded-[7px] text-sm",
@@ -30,7 +29,6 @@ export default function Logo({ size = "md", className = "" }: LogoProps) {
 
   return (
     <div className={`flex items-center justify-center font-sans ${current.text} ${className}`}>
-      {/* Icon Container */}
       <div 
         className={`
           ${current.icon}
@@ -48,7 +46,6 @@ export default function Logo({ size = "md", className = "" }: LogoProps) {
         </span>
       </div>
       
-      {/* Brand Text */}
       <Tag className="font-extrabold tracking-tight transition-opacity group-hover:opacity-90">
         <span className="text-foreground">Ro</span>
         <span className="text-zinc-400">DevTools</span>

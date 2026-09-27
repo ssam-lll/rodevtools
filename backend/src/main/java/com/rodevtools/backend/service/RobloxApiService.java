@@ -6,7 +6,7 @@ import com.rodevtools.backend.dto.RobloxGameDataDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RobloxApiService {
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
     private static final String ROBLOX_GAMES_API = "https://games.roblox.com/v1/games?universeIds=";
@@ -41,7 +41,10 @@ public class RobloxApiService {
 
             try {
                 String gamesUrl = ROBLOX_GAMES_API + idsParam;
-                String gamesResponse = restTemplate.getForObject(gamesUrl, String.class);
+                String gamesResponse = restClient.get()
+                        .uri(gamesUrl)
+                        .retrieve()
+                        .body(String.class);
                 JsonNode gamesRoot = objectMapper.readTree(gamesResponse);
                 JsonNode gamesArray = gamesRoot.path("data");
 
@@ -52,7 +55,10 @@ public class RobloxApiService {
                 Map<Long, long[]> votesMap = new HashMap<>();
                 try {
                     String votesUrl = ROBLOX_VOTES_API + idsParam;
-                    String votesResponse = restTemplate.getForObject(votesUrl, String.class);
+                    String votesResponse = restClient.get()
+                            .uri(votesUrl)
+                            .retrieve()
+                            .body(String.class);
                     JsonNode votesRoot = objectMapper.readTree(votesResponse);
                     JsonNode votesArray = votesRoot.path("data");
                     if (votesArray.isArray()) {
@@ -121,7 +127,10 @@ public class RobloxApiService {
         }
         try {
             String resolveUrl = "https://apis.roblox.com/universes/v1/places/" + placeId + "/universe";
-            String resolveResponse = restTemplate.getForObject(resolveUrl, String.class);
+            String resolveResponse = restClient.get()
+                    .uri(resolveUrl)
+                    .retrieve()
+                    .body(String.class);
             if (resolveResponse == null || resolveResponse.isBlank()) {
                 return Optional.empty();
             }

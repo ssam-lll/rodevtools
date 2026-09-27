@@ -5,6 +5,10 @@ import { GitCompare, Plus, Trash2, Users, DollarSign, Eye, Heart, Clock, FolderO
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import GameThumbnail from "@/components/GameThumbnail";
 import AuthModal from "@/components/AuthModal";
+import type { GameCompareData } from "@/types/universe";
+import type { Collection } from "@/types/radar";
+import { universeService } from "@/services/universeService";
+import { radarService } from "@/services/radarService";
 import {
   ResponsiveContainer,
   LineChart,
@@ -17,23 +21,6 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-
-interface GameCompareData {
-  universeId: string;
-  name: string;
-  creator: string;
-  activePlayers: number;
-  monthlyRevenue: number;
-  visits: number;
-  healthScore: number;
-  playtime: number;
-}
-
-interface Collection {
-  name: string;
-  games: string[];
-  updatedAt: number;
-}
 
 const METRIC_COLORS = ["#f4f4f5", "#a1a1aa", "#38bdf8", "#34d399", "#fbbf24"];
 
@@ -122,11 +109,8 @@ export default function ComparePage() {
     handleAuthChange();
     window.addEventListener("auth-change", handleAuthChange);
 
-    // Fetch games database
-    fetch("/api/universes")
-      .then((res) => res.json())
-      .then((data) => {
-        const gamesArray = Array.isArray(data) ? data : (data && Array.isArray(data.content) ? data.content : []);
+    universeService.getAllUniverses()
+      .then((gamesArray) => {
         if (gamesArray.length > 0) {
           const dbObj: Record<string, GameCompareData> = {};
           gamesArray.forEach((game: any) => {
@@ -146,7 +130,6 @@ export default function ComparePage() {
     };
   }, []);
 
-  // Get games for active collection
   const activeCollection = activeCollectionName ? collections[activeCollectionName] : null;
   const comparedGames: GameCompareData[] = activeCollection
     ? activeCollection.games.map((id) => database[id]).filter(Boolean)
@@ -171,12 +154,15 @@ export default function ComparePage() {
       try {
         await Promise.all(
           comparedGames.map(async (game) => {
-            const res = await fetch(`/api/universes?id=${game.universeId}`);
-            if (res.ok) {
-              const data = await res.json();
-              newHistory[game.universeId] = {
-                dailyMetrics: data.dailyMetrics || [],
-              };
+            try {
+              const data = await universeService.getUniverseById(game.universeId);
+              if (data) {
+                newHistory[game.universeId] = {
+                  dailyMetrics: data.dailyMetrics || [],
+                };
+              }
+            } catch (err) {
+              console.error(`Error loading history for ${game.universeId}:`, err);
             }
           })
         );
@@ -191,7 +177,6 @@ export default function ComparePage() {
     fetchHistory();
   }, [activeCollectionName, activeCollection?.games, database]);
 
-  // Generate comparison data for charts (deterministic based on index)
   const getComparisonData = (data: any[], dataKey: string) => {
     if (!comparisonPeriod || !data.length) return data;
 
@@ -206,7 +191,6 @@ export default function ComparePage() {
     });
   };
 
-  // Combine historical data for Recharts based on activeCompareTab
   const combinedChartData = useMemo(() => {
     const datesMap: Record<string, { day: string;[gameName: string]: any }> = {};
 
@@ -252,11 +236,10 @@ export default function ComparePage() {
     return combined;
   }, [comparedGames, comparedGamesHistory, activeCompareTab, comparisonPeriod, timeframe]);
 
-  // Create new collection
   const createCollection = useCallback(() => {
     if (!newCollectionName.trim()) return;
     const name = newCollectionName.trim();
-    if (collections[name]) return; // Already exists
+    if (collections[name]) return;
 
     const updated = {
       ...collections,
@@ -269,7 +252,6 @@ export default function ComparePage() {
     setActiveCollectionName(name);
   }, [newCollectionName, collections]);
 
-  // Delete collection
   const deleteCollection = useCallback((name: string) => {
     const deletedGames = collections[name]?.games || [];
     const updated = { ...collections };
@@ -280,23 +262,19 @@ export default function ComparePage() {
       setActiveCollectionName(null);
     }
 
-    // Sync deletions to Supabase: remove games not in any remaining collection
     if (user && user.token && deletedGames.length > 0) {
       deletedGames.forEach((gameId: string) => {
         const isInOtherCollection = Object.values(updated).some(
           (col) => Array.isArray(col.games) && col.games.map(String).includes(String(gameId))
         );
         if (!isInOtherCollection) {
-          fetch(`/api/radar/${gameId}`, {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${user.token}` }
-          }).catch(err => console.error("Error removing game from radar on collection delete:", err));
+          radarService.removeFromRadar(gameId, user.token)
+            .catch((err) => console.error("Error removing game from radar on collection delete:", err));
         }
       });
     }
   }, [collections, activeCollectionName, user]);
 
-  // Rename collection
   const renameCollection = useCallback((oldName: string) => {
     if (!editNameValue.trim() || editNameValue.trim() === oldName) {
       setEditingName(null);
@@ -314,7 +292,6 @@ export default function ComparePage() {
     setEditingName(null);
   }, [editNameValue, collections, activeCollectionName]);
 
-  // Add game to active collection
   const addGameToCollection = useCallback((id: string | number) => {
     if (!activeCollectionName || !collections[activeCollectionName]) return;
 
@@ -335,22 +312,14 @@ export default function ComparePage() {
     setCollections(updated);
     saveCollections(updated);
 
-    // Sync with backend user radar if logged in
     if (user && user.token) {
-      fetch("/api/radar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user.token}`
-        },
-        body: JSON.stringify({ universeId: Number(id) })
-      }).catch(err => console.error("Error syncing to backend radar:", err));
+      radarService.addToRadar(Number(id), user.token)
+        .catch((err) => console.error("Error syncing to backend radar:", err));
     }
 
     setSelectorOpen(false);
   }, [activeCollectionName, collections, user]);
 
-  // Remove game from active collection
   const removeGameFromCollection = useCallback((id: string | number) => {
     if (!activeCollectionName || !collections[activeCollectionName]) return;
 
@@ -368,7 +337,6 @@ export default function ComparePage() {
     setCollections(updated);
     saveCollections(updated);
 
-    // Sync deletion with backend user radar if logged in and not present in other collections
     if (user && user.token) {
       const isGameInOtherCollections = Object.entries(updated).some(([name, col]) => {
         if (name === activeCollectionName) return false;
@@ -376,17 +344,12 @@ export default function ComparePage() {
       });
 
       if (!isGameInOtherCollections) {
-        fetch(`/api/radar/${id}`, {
-          method: "DELETE",
-          headers: {
-            "Authorization": `Bearer ${user.token}`
-          }
-        }).catch(err => console.error("Error deleting from backend radar:", err));
+        radarService.removeFromRadar(id, user.token)
+          .catch((err) => console.error("Error deleting from backend radar:", err));
       }
     }
   }, [activeCollectionName, collections, user]);
 
-  // Dynamically fetch details for games in active collection that are missing from database
   useEffect(() => {
     if (!activeCollection || !Array.isArray(activeCollection.games) || activeCollection.games.length === 0) return;
 
@@ -396,9 +359,8 @@ export default function ComparePage() {
     Promise.all(
       missingIds.map(async (id) => {
         try {
-          const res = await fetch(`/api/universes?id=${id}`);
-          if (res.ok) {
-            const data = await res.json();
+          const data = await universeService.getUniverseById(id);
+          if (data) {
             return { id, data };
           }
         } catch (e) {
@@ -432,7 +394,6 @@ export default function ComparePage() {
     });
   }, [activeCollection, database]);
 
-  // Find winner helper
   const getWinnerId = (metric: keyof GameCompareData): string | null => {
     if (comparedGames.length < 2) return null;
     let maxVal = -1;
@@ -477,7 +438,6 @@ export default function ComparePage() {
     return name.includes(query) || id.includes(query);
   });
 
-  // Metrics config for the comparison table
   const metrics = [
     { key: "activePlayers" as const, label: "Active CCU", icon: Users, iconColor: "text-primary", format: formatNumber },
     { key: "monthlyRevenue" as const, label: "Est. Monthly Revenue", icon: DollarSign, iconColor: "text-amber-400", format: formatCurrency },
@@ -486,7 +446,6 @@ export default function ComparePage() {
     { key: "playtime" as const, label: "Avg Playtime", icon: Clock, iconColor: "text-blue-400", format: (v: number) => `${v} min` },
   ];
 
-  // Prepare chart data for comparative bar chart
   const chartData = metrics.map((metric) => {
     const entry: Record<string, any> = { metric: metric.label };
     comparedGames.forEach((game) => {
@@ -500,7 +459,6 @@ export default function ComparePage() {
   return (
     <main className="relative flex-1 bg-background text-foreground p-6 md:p-8">
       <div className="container-max z-10">
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-outline-variant/30 pb-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Game Comparer</h1>
@@ -520,7 +478,6 @@ export default function ComparePage() {
           )}
         </div>
 
-        {/* Loading State */}
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="text-center">
@@ -529,7 +486,6 @@ export default function ComparePage() {
             </div>
           </div>
         ) : !mounted ? null : !user ? (
-          /* Sign In Prompt when not logged in */
           <div className="max-w-[500px] mx-auto py-16 text-center animate-fade-in">
             <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
               <FolderOpen className="w-8 h-8 text-primary" />
@@ -547,9 +503,7 @@ export default function ComparePage() {
             </button>
           </div>
         ) : activeCollectionName && activeCollection ? (
-          /* Active Collection - Comparison View */
           <div className="space-y-6 animate-fade-in">
-            {/* Collection Header */}
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-xl font-bold text-foreground">{activeCollectionName}</h2>
               {activeCollection.games.length < 3 && (
@@ -564,7 +518,6 @@ export default function ComparePage() {
 
                   {selectorOpen && (
                     <div className="absolute right-0 mt-2 w-72 rounded-xl border border-outline bg-surface-container shadow-2xl z-50 p-2 max-h-64 overflow-y-auto">
-                      {/* Search Bar inside selector */}
                       <div className="p-1 border-b border-outline-variant/30 sticky top-0 bg-surface-container z-10">
                         <input
                           type="text"
@@ -616,7 +569,6 @@ export default function ComparePage() {
               </div>
             ) : (
               <>
-                {/* Comparative Table */}
                 <div className="overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface-container-lowest/40 backdrop-blur-sm shadow-sm">
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-left">
@@ -678,7 +630,6 @@ export default function ComparePage() {
                   </div>
                 </div>
 
-                {/* Comparative Switcher Card */}
                 <Card>
                   <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-outline-variant/30 pb-4">
                     <div>
@@ -691,7 +642,6 @@ export default function ComparePage() {
                       </CardDescription>
                     </div>
 
-                    {/* Metric Tab Buttons */}
                     <div className="flex flex-wrap gap-1 bg-surface-container-low/60 border border-outline-variant/20 p-1 rounded-lg self-start">
                       {[
                         { id: "ccu", label: "Players (CCU)" },
@@ -717,9 +667,7 @@ export default function ComparePage() {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-6">
-                    {/* Timeframe & Comparison controls */}
                     <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-outline-variant/30">
-                      {/* Timeframe Selector */}
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs text-on-surface-variant font-mono font-medium mr-1">Timeframe:</span>
                         {[
@@ -741,7 +689,6 @@ export default function ComparePage() {
                         ))}
                       </div>
 
-                      {/* Compare with */}
                       {timeframe !== null && (() => {
                         const matchMap: Record<number, { label: string; value: number }> = {
                           7: { label: "vs. Previous Week", value: 7 },
@@ -866,9 +813,7 @@ export default function ComparePage() {
             )}
           </div>
         ) : (
-          /* Collections List View */
           <div className="space-y-6 animate-fade-in">
-            {/* New Collection Button / Form */}
             <div className="flex items-center gap-4">
               {creatingCollection ? (
                 <div className="flex items-center gap-2">
@@ -906,7 +851,6 @@ export default function ComparePage() {
               )}
             </div>
 
-            {/* Collections Grid */}
             {collectionEntries.length === 0 ? (
               <div className="max-w-[500px] mx-auto py-16 text-center">
                 <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
@@ -925,7 +869,6 @@ export default function ComparePage() {
                     className="relative group cursor-pointer hover:border-primary/40 transition-all duration-200"
                     onClick={() => setActiveCollectionName(col.name)}
                   >
-                    {/* Delete button */}
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteCollection(col.name); }}
                       className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-red-500/10 text-on-surface-variant hover:text-red-400 border border-transparent hover:border-red-500/20 transition-all z-10 opacity-0 group-hover:opacity-100 cursor-pointer"
