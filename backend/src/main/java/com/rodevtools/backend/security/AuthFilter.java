@@ -29,11 +29,16 @@ public class AuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getServletPath();
+        if (path.isEmpty()) {
+            path = request.getRequestURI();
+        }
         String method = request.getMethod();
 
         if (path.startsWith("/auth/")) return true;
         if (path.startsWith("/api/thumbnails")) return true;
         if (path.startsWith("/api/universes") && "GET".equalsIgnoreCase(method)) return true;
+        if (("GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method))
+            && (path.equals("/actuator/health") || path.equals("/actuator/info"))) return true;
 
         return false;
     }

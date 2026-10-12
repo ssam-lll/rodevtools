@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: rodevtools
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rodevtools"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SUPABASE_DB_URL: jdbc:postgresql://postgres:5432/rodevtools
+      SUPABASE_DB_USERNAME: postgres
+      SUPABASE_DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-local-dev-jwt-secret-key-at-least-32-bytes-long}
+      APP_API_KEY: ${APP_API_KEY:-local-dev-api-key}
+      SPRING_PROFILES_ACTIVE: dev

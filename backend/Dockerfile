@@ -33,6 +33,8 @@ USER appuser
 EXPOSE 8080
 
 # Opciones de JVM optimizadas para máquinas con 1GB de RAM (Compute Engine e2-micro)
-ENV JAVA_OPTS="-XX:+UseSerialGC -XX:MaxRAMPercentage=65.0 -Xms128m -Xmx512m -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_OPTS="-XX:+UseSerialGC -Xms128m -Xmx512m -XX:MaxMetaspaceSize=128m -Djava.security.egd=file:/dev/./urandom"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
