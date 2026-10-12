@@ -52,7 +52,9 @@ jobs:
           SUPABASE_DB_PASSWORD: postgres
           JWT_SECRET: ci-test-jwt-secret-key-at-least-32-bytes-long-123456
           APP_API_KEY: ci-test-api-key
-        run: ./gradlew test --no-daemon
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test --no-daemon
 
   build-and-push:
     needs: verify
