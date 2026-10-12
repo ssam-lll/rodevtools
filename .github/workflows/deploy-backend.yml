@@ -50,7 +50,7 @@ jobs:
           SUPABASE_DB_URL: jdbc:postgresql://localhost:5432/rodevtools
           SUPABASE_DB_USERNAME: postgres
           SUPABASE_DB_PASSWORD: postgres
-          JWT_SECRET: ci-test-jwt-secret-key-at-least-32-bytes-long-123456
+          JWT_SECRET: Y2ktdGVzdC1qd3Qtc2VjcmV0LWtleS1hdC1sZWFzdC0zMi1ieXRlcy1sb25nLTEyMzQ1Ng==
           APP_API_KEY: ci-test-api-key
         run: |
           chmod +x ./gradlew

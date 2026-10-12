@@ -26,6 +26,6 @@ services:
       SUPABASE_DB_URL: jdbc:postgresql://postgres:5432/rodevtools
       SUPABASE_DB_USERNAME: postgres
       SUPABASE_DB_PASSWORD: postgres
-      JWT_SECRET: ${JWT_SECRET:-local-dev-jwt-secret-key-at-least-32-bytes-long}
+      JWT_SECRET: ${JWT_SECRET:-Y2ktdGVzdC1qd3Qtc2VjcmV0LWtleS1hdC1sZWFzdC0zMi1ieXRlcy1sb25nLTEyMzQ1Ng==}
       APP_API_KEY: ${APP_API_KEY:-local-dev-api-key}
       SPRING_PROFILES_ACTIVE: dev
