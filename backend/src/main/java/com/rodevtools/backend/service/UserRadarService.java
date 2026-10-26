@@ -56,6 +56,54 @@ public class UserRadarService {
 
     @Transactional
     public void removeFromRadar(UUID userId, Long universeId) {
-        userRadarRepository.deleteByUserIdAndGameUniverseId(userId, universeId);
+        long deleted = userRadarRepository.deleteByUserIdAndGameUniverseId(userId, universeId);
+        if (deleted == 0) {
+            throw new ResourceNotFoundException("Game with universeId " + universeId + " not found in user radar");
+        }
+    }
+
+    @Transactional
+    public long removeBatchFromRadar(UUID userId, List<Long> universeIds) {
+        return userRadarRepository.deleteByUserIdAndGameUniverseIdIn(userId, universeIds);
+    }
+
+    @Transactional
+    public long clearRadar(UUID userId) {
+        return userRadarRepository.deleteByUserId(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportRadarToCsv(UUID userId) {
+        List<GameResponseDto> games = getRadarGames(userId);
+        StringBuilder sb = new StringBuilder();
+        sb.append("universeId,rootPlaceId,name,creator,playing,visits,rating,category,estimatedMonthlyRevenueUsd\r\n");
+
+        for (GameResponseDto game : games) {
+            if (game == null) {
+                continue;
+            }
+            sb.append(escapeCsv(game.getUniverseId())).append(',')
+              .append(escapeCsv(game.getRootPlaceId())).append(',')
+              .append(escapeCsv(game.getName())).append(',')
+              .append(escapeCsv(game.getCreator())).append(',')
+              .append(escapeCsv(game.getActivePlayers())).append(',')
+              .append(escapeCsv(game.getVisits())).append(',')
+              .append(escapeCsv(game.getHealthScore())).append(',')
+              .append(escapeCsv(game.getCategory())).append(',')
+              .append(escapeCsv(game.getMonthlyRevenue())).append("\r\n");
+        }
+
+        return sb.toString();
+    }
+
+    private String escapeCsv(Object value) {
+        if (value == null) {
+            return "";
+        }
+        String str = String.valueOf(value);
+        if (str.contains(",") || str.contains("\"") || str.contains("\n") || str.contains("\r")) {
+            return "\"" + str.replace("\"", "\"\"") + "\"";
+        }
+        return str;
     }
 }

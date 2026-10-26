@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -31,6 +30,14 @@ public interface GameRepository extends JpaRepository<Game, Long> {
 
     Optional<Game> findFirstByGameNameContainingIgnoreCaseOrderByPlayingDesc(String name);
 
+    @Query("SELECT COALESCE(SUM(g.playing), 0L) FROM Game g")
+    Long sumPlaying();
+
+    @Query("SELECT COALESCE(SUM(g.visits), 0L) FROM Game g")
+    Long sumVisits();
+
+    @Query("SELECT COALESCE(AVG(g.rating), 0.0) FROM Game g")
+    Double avgRating();
 
     @Query(value = "SELECT universeId, name, currentCcu, pastCcu, growthRate, creatorName, healthScore FROM (" +
             "    SELECT g.universe_id AS universeId, " +

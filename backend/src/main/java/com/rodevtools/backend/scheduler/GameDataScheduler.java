@@ -44,15 +44,13 @@ public class GameDataScheduler {
         log.info("SCHEDULER: Batch synchronization for {} games completed in {} ms.", gameIdsToSync.size(), duration);
     }
 
-    /**
-     * Runs daily at 03:00 AM to consolidate snapshots older than 14 days into daily rollups and purge old raw records.
-     */
     @Scheduled(cron = "0 0 3 * * ?")
     public void consolidateOldSnapshots() {
         log.info("SCHEDULER: Starting scheduled daily snapshot consolidation...");
         try {
             var result = snapshotConsolidationService.consolidateAndPurge();
-            log.info("SCHEDULER: Daily snapshot consolidation completed. Consolidated {} records, purged {} snapshots in {} ms.",
+            log.info(
+                    "SCHEDULER: Daily snapshot consolidation completed. Consolidated {} records, purged {} snapshots in {} ms.",
                     result.getDailyRecordsUpserted(), result.getSnapshotsDeleted(), result.getDurationMs());
         } catch (Exception e) {
             log.error("SCHEDULER: Error occurred during daily snapshot consolidation: {}", e.getMessage(), e);

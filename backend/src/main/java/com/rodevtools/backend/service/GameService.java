@@ -1,8 +1,10 @@
 package com.rodevtools.backend.service;
 
 import com.rodevtools.backend.dto.GameResponseDto;
+import com.rodevtools.backend.dto.MarketSummaryDto;
 import com.rodevtools.backend.dto.RobloxGameDataDto;
 import com.rodevtools.backend.dto.XRayDetailsDto;
+import com.rodevtools.backend.exception.ResourceNotFoundException;
 import com.rodevtools.backend.model.Game;
 import com.rodevtools.backend.model.GameSnapshot;
 import com.rodevtools.backend.repository.GameRepository;
@@ -14,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
@@ -33,6 +34,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class GameService {
+
+    public static final long ON_DEMAND_SYNC_COOLDOWN_SECONDS = 300;
 
     private static final Pattern URL_PATTERN = Pattern.compile("(?:games[/=]|placeId=)(\\d+)");
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("^\\d+$");
@@ -70,12 +73,6 @@ public class GameService {
         return gameRepository.save(game);
     }
 
-    @Transactional
-    public void delete(Long universeId) {
-        gameSnapshotRepository.deleteByGameUniverseId(universeId);
-        gameRepository.deleteById(universeId);
-    }
-
     public List<Long> getGamesToSync(Instant cutoff, int limit) {
         return gameRepository.findGamesToSync(cutoff, PageRequest.of(0, limit));
     }
@@ -84,16 +81,11 @@ public class GameService {
         return playing != null ? playing * 4.5 * 30 : 0.0;
     }
 
-    public int calculateEstimatedPlaytime(Long ccu, Long visits) {
-        return 20;
-    }
-
     public GameResponseDto toGameResponseDto(Game game) {
         if (game == null) {
             return null;
         }
         double monthlyRevenue = calculateMonthlyRevenue(game.getPlaying());
-        int playtime = calculateEstimatedPlaytime(game.getPlaying(), game.getVisits());
         return new GameResponseDto(
                 game.getUniverseId(),
                 game.getRootPlaceId(),
@@ -103,8 +95,7 @@ public class GameService {
                 game.getVisits(),
                 game.getRating(),
                 game.getCategory(),
-                monthlyRevenue,
-                playtime
+                monthlyRevenue
         );
     }
 
@@ -114,7 +105,6 @@ public class GameService {
         List<XRayDetailsDto.DailyMetricDto> metrics = new ArrayList<>();
         Long previousMaxVisits = null;
         LocalDate previousDate = null;
-        int avgPlaytime = calculateEstimatedPlaytime(game.getPlaying(), game.getVisits());
 
         for (DailyAnalyticsProjection dayPoint : dailyData) {
             long dailyVisits = 0;
@@ -139,7 +129,6 @@ public class GameService {
                     formattedDay,
                     avgCcu,
                     dailyVisits,
-                    avgPlaytime,
                     dailyRevenue));
         }
 
@@ -153,9 +142,78 @@ public class GameService {
                 game.getVisits(),
                 game.getPlaying(),
                 monthlyRevenue,
-                avgPlaytime,
                 game.getRating(),
                 metrics);
+    }
+
+    public XRayDetailsDto syncGameOnDemand(Long universeId) {
+        Optional<Game> existingOpt = gameRepository.findById(universeId);
+        if (existingOpt.isPresent()) {
+            Game existing = existingOpt.get();
+            if (existing.getLastSyncedAt() != null
+                    && Instant.now().isBefore(existing.getLastSyncedAt().plusSeconds(ON_DEMAND_SYNC_COOLDOWN_SECONDS))
+                    && existing.getGameName() != null
+                    && !"[TITLE UNAVAILABLE]".equals(existing.getGameName())) {
+                return getXRayDetails(existing);
+            }
+        }
+
+        Game synced = syncGame(universeId);
+        if (synced == null) {
+            throw new ResourceNotFoundException("Universe not found with ID " + universeId);
+        }
+        return getXRayDetails(synced);
+    }
+
+    public String exportXRayToCsv(String universeIdOrQuery) {
+        Game game = resolveGame(universeIdOrQuery)
+                .orElseThrow(() -> new ResourceNotFoundException("Universe not found: " + universeIdOrQuery));
+
+        XRayDetailsDto xray = getXRayDetails(game);
+        StringBuilder sb = new StringBuilder();
+        sb.append("universeId,gameName,day,averageCcu,dailyVisits,estimatedDailyRevenueUsd\r\n");
+
+        List<XRayDetailsDto.DailyMetricDto> metrics = xray.getDailyMetrics();
+        if (metrics != null) {
+            for (XRayDetailsDto.DailyMetricDto metric : metrics) {
+                sb.append(escapeCsv(xray.getUniverseId())).append(',')
+                  .append(escapeCsv(xray.getName())).append(',')
+                  .append(escapeCsv(metric.getDay())).append(',')
+                  .append(escapeCsv(metric.getCcu())).append(',')
+                  .append(escapeCsv(metric.getVisits())).append(',')
+                  .append(escapeCsv(metric.getRevenue())).append("\r\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    public MarketSummaryDto getMarketSummary() {
+        long totalTrackedGames = gameRepository.count();
+        long totalActivePlayers = Optional.ofNullable(gameRepository.sumPlaying()).orElse(0L);
+        long totalVisits = Optional.ofNullable(gameRepository.sumVisits()).orElse(0L);
+        double averageRating = Optional.ofNullable(gameRepository.avgRating()).orElse(0.0);
+        double roundedAverageRating = Math.round(averageRating * 100.0) / 100.0;
+        double estimatedMarketMonthlyRevenueUsd = calculateMonthlyRevenue(totalActivePlayers);
+
+        return new MarketSummaryDto(
+                totalTrackedGames,
+                totalActivePlayers,
+                totalVisits,
+                roundedAverageRating,
+                estimatedMarketMonthlyRevenueUsd
+        );
+    }
+
+    private String escapeCsv(Object value) {
+        if (value == null) {
+            return "";
+        }
+        String str = String.valueOf(value);
+        if (str.contains(",") || str.contains("\"") || str.contains("\n") || str.contains("\r")) {
+            return "\"" + str.replace("\"", "\"\"") + "\"";
+        }
+        return str;
     }
 
     public Optional<Game> resolveGame(String query) {

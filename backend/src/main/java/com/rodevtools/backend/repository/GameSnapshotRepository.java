@@ -64,6 +64,4 @@ public interface GameSnapshotRepository extends JpaRepository<GameSnapshot, Long
     int deleteSnapshotsBefore(@Param("cutoffTimestamp") Instant cutoffTimestamp);
 
     long countBySnapshotTimestampBefore(Instant cutoffTimestamp);
-
-    void deleteByGameUniverseId(Long universeId);
 }

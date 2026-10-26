@@ -11,5 +11,7 @@ import java.util.UUID;
 public interface UserRadarRepository extends JpaRepository<UserRadar, Long> {
     List<UserRadar> findByUserId(UUID userId);
     boolean existsByUserIdAndGameUniverseId(UUID userId, Long universeId);
-    void deleteByUserIdAndGameUniverseId(UUID userId, Long universeId);
+    long deleteByUserIdAndGameUniverseId(UUID userId, Long universeId);
+    long deleteByUserId(UUID userId);
+    long deleteByUserIdAndGameUniverseIdIn(UUID userId, List<Long> universeIds);
 }

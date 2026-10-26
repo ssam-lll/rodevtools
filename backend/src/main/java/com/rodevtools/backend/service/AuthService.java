@@ -1,19 +1,26 @@
 package com.rodevtools.backend.service;
 
 import com.rodevtools.backend.dto.AuthResponseDto;
+import com.rodevtools.backend.dto.ChangePasswordRequestDto;
 import com.rodevtools.backend.dto.LoginRequestDto;
 import com.rodevtools.backend.dto.RegisterRequestDto;
+import com.rodevtools.backend.exception.ResourceNotFoundException;
 import com.rodevtools.backend.model.User;
+import com.rodevtools.backend.repository.UserRadarRepository;
 import com.rodevtools.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final UserRadarRepository userRadarRepository;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
 
@@ -46,5 +53,31 @@ public class AuthService {
 
         String token = tokenService.generateToken(user.getId(), user.getEmail(), user.getRole());
         return new AuthResponseDto(token, user.getEmail(), user.getRole());
+    }
+
+    @Transactional
+    public void deleteAccount(UUID userId, String password) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid password");
+        }
+
+        userRadarRepository.deleteByUserId(userId);
+        userRepository.delete(user);
+    }
+
+    @Transactional
+    public void changePassword(UUID userId, ChangePasswordRequestDto request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid current password");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
     }
 }

@@ -1,6 +1,7 @@
 package com.rodevtools.backend.controller;
 
 import com.rodevtools.backend.dto.GameResponseDto;
+import com.rodevtools.backend.dto.MarketSummaryDto;
 import com.rodevtools.backend.dto.RisingStarResponseDto;
 import com.rodevtools.backend.dto.XRayDetailsDto;
 import com.rodevtools.backend.model.Game;
@@ -9,16 +10,15 @@ import com.rodevtools.backend.service.GameAnalyticsService;
 import com.rodevtools.backend.service.GameService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/universes")
@@ -27,6 +27,11 @@ public class GameController {
 
     private final GameService gameService;
     private final GameAnalyticsService gameAnalyticsService;
+
+    @GetMapping("/stats/summary")
+    public ResponseEntity<MarketSummaryDto> getMarketSummary() {
+        return ResponseEntity.ok(gameService.getMarketSummary());
+    }
 
     @GetMapping("/resolve")
     public ResponseEntity<XRayDetailsDto> resolveGame(@RequestParam("query") String query) {
@@ -63,10 +68,24 @@ public class GameController {
     }
 
     @GetMapping("/{universeId}")
-    public ResponseEntity<XRayDetailsDto> getUniverseById(@PathVariable String universeId) {
+    public ResponseEntity<XRayDetailsDto> getUniverseById(@PathVariable("universeId") String universeId) {
         return gameService.resolveGame(universeId)
                 .map(game -> ResponseEntity.ok(gameService.getXRayDetails(game)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping(value = "/{universeId}/export/csv", produces = "text/csv")
+    public ResponseEntity<String> exportUniverseCsv(@PathVariable("universeId") String universeId) {
+        String csv = gameService.exportXRayToCsv(universeId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"universe-" + universeId + "-analytics.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
+    }
+
+    @PostMapping("/{universeId}/sync")
+    public ResponseEntity<XRayDetailsDto> syncUniverseOnDemand(@PathVariable("universeId") Long universeId) {
+        return ResponseEntity.ok(gameService.syncGameOnDemand(universeId));
     }
 
     @GetMapping("/rising")

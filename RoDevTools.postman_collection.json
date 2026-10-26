@@ -2,13 +2,13 @@
 	"info": {
 		"_postman_id": "a8f12c34-7890-4abc-9def-rodevtools01",
 		"name": "RoDevTools API",
-		"description": "Colección completa para pruebas de todos los endpoints del backend RoDevTools (Spring Boot).\n\nIncluye:\n- Autenticación (Registro y Login con extracción automática de JWT a variables)\n- Universos y Juegos de Roblox (Listado paginado, detalle X-Ray, Rising Stars)\n- Consolidación de snapshots\n- Proxy de miniaturas (Thumbnails de Roblox)\n- Radar personal del usuario (Listar, Agregar, Eliminar juegos rastreados)",
+		"description": "Colección completa para pruebas de todos los endpoints del backend RoDevTools (Spring Boot).\n\nIncluye:\n- Autenticación (Registro, Login, Cambio de Contraseña y Eliminación de Cuenta)\n- Universos y Juegos de Roblox (Listado paginado, detalle X-Ray, Rising Stars, Resumen de Mercado, Exportación CSV y Sincronización Bajo Demanda)\n- Proxy de miniaturas (Thumbnails de Roblox)\n- Radar personal del usuario (Listar, Agregar, Eliminar individual/lote/total, y Exportar CSV)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
 			"name": "01. Authentication",
-			"description": "Endpoints públicos de autenticación y gestión de sesiones",
+			"description": "Endpoints de autenticación y gestión de cuenta",
 			"item": [
 				{
 					"name": "1. Registrar Usuario",
@@ -38,9 +38,7 @@
 									"    pm.expect(jsonData).to.have.property('email');",
 									"    pm.expect(jsonData).to.have.property('role');",
 									"    ",
-									"    // Guardar token automáticamente para los siguientes requests protegidos",
 									"    pm.collectionVariables.set(\"token\", jsonData.token);",
-									"    console.log(\"Token JWT guardado automáticamente en la variable 'token'\");",
 									"});"
 								],
 								"type": "text/javascript"
@@ -89,9 +87,7 @@
 									"    pm.expect(jsonData).to.have.property('token');",
 									"    pm.expect(jsonData.email).to.eql(pm.collectionVariables.get(\"userEmail\"));",
 									"    ",
-									"    // Guardar token automáticamente para los requests que lo requieren",
 									"    pm.collectionVariables.set(\"token\", jsonData.token);",
-									"    console.log(\"Token JWT actualizado exitosamente en variable 'token'\");",
 									"});"
 								],
 								"type": "text/javascript"
@@ -123,12 +119,124 @@
 						"description": "Autentica un usuario existente y devuelve el token JWT.\nNota: El backend aplica Rate Limit de 5 intentos por 15 minutos por IP."
 					},
 					"response": []
+				},
+				{
+					"name": "3. Cambiar Contraseña",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Confirma actualización de contraseña\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.eql(\"Password updated successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currentPassword\": \"{{userPassword}}\",\n    \"newPassword\": \"{{userPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"password"
+							]
+						},
+						"description": "Actualiza la contraseña del usuario autenticado verificando la contraseña actual."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Eliminar Cuenta",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Confirma eliminación de cuenta y radar\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.eql(\"Account and radar data deleted successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"password\": \"{{userPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/account",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"account"
+							]
+						},
+						"description": "Elimina permanentemente la cuenta del usuario autenticado y todos sus juegos en radar tras verificar su contraseña."
+					},
+					"response": []
 				}
 			]
 		},
 		{
 			"name": "02. Universes & Analytics",
-			"description": "Consultas públicas y analíticas de universos de Roblox",
+			"description": "Consultas públicas, exportación y sincronización bajo demanda de universos de Roblox",
 			"item": [
 				{
 					"name": "1. Listar Universos Paginados",
@@ -152,12 +260,10 @@
 									"        pm.expect(firstGame).to.have.property('name');",
 									"        pm.expect(firstGame).to.have.property('activePlayers');",
 									"        ",
-									"        // Guardar universeId y placeId encontrados para reutilizarlos",
 									"        pm.collectionVariables.set(\"universeId\", firstGame.universeId);",
 									"        if (firstGame.rootPlaceId) {",
 									"            pm.collectionVariables.set(\"placeId\", firstGame.rootPlaceId);",
 									"        }",
-									"        console.log(\"Variable 'universeId' actualizada con: \" + firstGame.universeId);",
 									"    }",
 									"});"
 								],
@@ -244,20 +350,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/universes?id={{universeId}}",
+							"raw": "{{baseUrl}}/api/universes/{{universeId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
-								"universes"
-							],
-							"query": [
-								{
-									"key": "id",
-									"value": "{{universeId}}",
-									"description": "ID del universo Roblox (si no está en BD, el backend lo sincroniza automáticamente con la API de Roblox)"
-								}
+								"universes",
+								"{{universeId}}"
 							]
 						},
 						"description": "Obtiene la analítica detallada X-Ray de un juego (métricas diarias, ingresos estimados, ccu promedio). Si el juego no existe en BD, el backend invoca automáticamente la API de Roblox para sincronizarlo."
@@ -389,6 +489,137 @@
 							]
 						},
 						"description": "Retorna juegos ordenados por tasa de crecimiento y health score durante la ventana de tiempo especificada."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Resumen Global del Mercado (Market Summary)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna métricas agregadas del mercado\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('totalTrackedGames');",
+									"    pm.expect(jsonData).to.have.property('totalActivePlayers');",
+									"    pm.expect(jsonData).to.have.property('totalVisits');",
+									"    pm.expect(jsonData).to.have.property('averageRating');",
+									"    pm.expect(jsonData).to.have.property('estimatedMarketMonthlyRevenueUsd');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/universes/stats/summary",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"universes",
+								"stats",
+								"summary"
+							]
+						},
+						"description": "Retorna estadísticas globales agregadas de todos los juegos rastreados (total juegos, jugadores activos, visitas, rating promedio e ingreso mensual estimado del mercado)."
+					},
+					"response": []
+				},
+				{
+					"name": "6. Exportar Analítica X-Ray a CSV",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna CSV con encabezados esperados\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"universeId,gameName,day,averageCcu,dailyVisits,avgPlaytimeMinutes,estimatedDailyRevenueUsd\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/universes/{{universeId}}/export/csv",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"universes",
+								"{{universeId}}",
+								"export",
+								"csv"
+							]
+						},
+						"description": "Descarga en formato CSV el historial de analítica diaria X-Ray de un universo."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Sincronizar Universo Bajo Demanda (Con Cooldown)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna detalle X-Ray sincronizado\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('universeId');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/universes/{{universeId}}/sync",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"universes",
+								"{{universeId}}",
+								"sync"
+							]
+						},
+						"description": "Sincroniza bajo demanda un universo con la API de Roblox aplicando un cooldown idempotente de 5 minutos."
 					},
 					"response": []
 				}
@@ -561,7 +792,55 @@
 					"response": []
 				},
 				{
-					"name": "3. Eliminar Juego del Radar",
+					"name": "3. Exportar Radar a CSV",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna CSV con encabezados del radar\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"universeId,rootPlaceId,name,creator,playing,visits,rating,category,estimatedMonthlyRevenueUsd,estimatedPlaytimeMinutes\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/radar/export/csv",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"radar",
+								"export",
+								"csv"
+							]
+						},
+						"description": "Descarga un archivo CSV con todos los juegos actualmente en el radar del usuario."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Eliminar Juego del Radar",
 					"event": [
 						{
 							"listen": "test",
@@ -604,7 +883,111 @@
 								"{{universeId}}"
 							]
 						},
-						"description": "Elimina el juego con el universeId especificado del radar del usuario autenticado."
+						"description": "Elimina el juego con el universeId especificado del radar del usuario autenticado. Retorna 404 si no se encuentra en el radar."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Eliminar Lote de Juegos del Radar (Batch Delete)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna cantidad de juegos eliminados\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('deletedCount');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"universeIds\": [{{universeId}}]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/radar/batch",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"radar",
+								"batch"
+							]
+						},
+						"description": "Elimina múltiples juegos del radar del usuario autenticado en una sola operación."
+					},
+					"response": []
+				},
+				{
+					"name": "6. Vaciar Todo el Radar (Clear Radar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code es 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Retorna confirmación de radar vaciado\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('deletedCount');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/radar",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"radar"
+							]
+						},
+						"description": "Elimina todos los juegos registrados en el radar del usuario autenticado."
 					},
 					"response": []
 				}

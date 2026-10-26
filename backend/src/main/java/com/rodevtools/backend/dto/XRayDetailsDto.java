@@ -17,7 +17,6 @@ public class XRayDetailsDto {
     private Long visits;
     private Long activePlayers;
     private Double monthlyRevenue;
-    private Integer playtime;
     private Double healthScore;
     private List<DailyMetricDto> dailyMetrics;
 
@@ -28,7 +27,6 @@ public class XRayDetailsDto {
         private String day;
         private Long ccu;
         private Long visits;
-        private Integer playtime;
         private Double revenue;
     }
 }

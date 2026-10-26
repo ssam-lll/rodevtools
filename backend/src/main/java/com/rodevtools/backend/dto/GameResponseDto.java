@@ -17,5 +17,4 @@ public class GameResponseDto {
     private Double healthScore;
     private String category;
     private Double monthlyRevenue;
-    private Integer playtime;
 }

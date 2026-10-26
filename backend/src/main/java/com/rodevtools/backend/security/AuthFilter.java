@@ -34,7 +34,7 @@ public class AuthFilter extends OncePerRequestFilter {
         }
         String method = request.getMethod();
 
-        if (path.startsWith("/auth/")) return true;
+        if (path.equals("/auth/login") || path.equals("/auth/register")) return true;
         if (path.startsWith("/api/thumbnails")) return true;
         if (path.startsWith("/api/universes") && "GET".equalsIgnoreCase(method)) return true;
         if (("GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method))
