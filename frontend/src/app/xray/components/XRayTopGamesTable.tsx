@@ -25,6 +25,8 @@ export function XRayTopGamesTable({
   const [topGamesPage, setTopGamesPage] = useState(0);
   const [topGamesTotalPages, setTopGamesTotalPages] = useState(1);
   const [topGamesTotalElements, setTopGamesTotalElements] = useState(0);
+  const [sortKey, setSortKey] = useState("activePlayers");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat("en-US").format(num);
@@ -41,14 +43,15 @@ export function XRayTopGamesTable({
   useEffect(() => {
     const controller = new AbortController();
     setAllGamesLoading(true);
+    const apiSort = sortKey === "activePlayers" ? "playing" : sortKey;
 
     universeService
       .getTopGames(
         {
           page: topGamesPage,
           size: 20,
-          sort: "playing",
-          dir: "desc",
+          sort: apiSort,
+          dir: sortDir,
           search: debouncedTopGamesSearch,
         },
         controller.signal
@@ -69,7 +72,7 @@ export function XRayTopGamesTable({
     return () => {
       controller.abort();
     };
-  }, [topGamesPage, debouncedTopGamesSearch]);
+  }, [topGamesPage, debouncedTopGamesSearch, sortKey, sortDir]);
 
   const topGamesColumns: ColumnDef<ListGame>[] = [
     {
@@ -165,7 +168,7 @@ export function XRayTopGamesTable({
                 className="px-3 py-1.5 rounded-lg bg-surface-container-high/60 hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/40 text-xs text-primary font-medium flex items-center gap-2 transition-all cursor-pointer shadow-sm"
               >
                 <span>{item.name}</span>
-                <span className="text-[10px] text-on-surface-variant">→</span>
+                <span className="text-xs text-on-surface-variant">→</span>
               </button>
             ))}
           </div>
@@ -189,13 +192,14 @@ export function XRayTopGamesTable({
               placeholder="Filter top games by name..."
               value={topGamesSearch}
               onChange={(e) => setTopGamesSearch(e.target.value)}
-              className="w-full pl-9 pr-8 py-1.5 rounded-lg bg-surface-container-high/70 border border-outline-variant/40 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40 transition-colors"
+              className="w-full pl-9 pr-8 py-1.5 rounded-lg bg-surface-container-high/70 border border-outline-variant/40 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-muted transition-colors"
             />
             {topGamesSearch && (
               <button
                 type="button"
+                aria-label="Clear filter"
                 onClick={() => setTopGamesSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-foreground cursor-pointer"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-on-surface-variant hover:text-foreground cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -208,6 +212,11 @@ export function XRayTopGamesTable({
           columns={topGamesColumns}
           defaultSortKey="activePlayers"
           defaultSortDir="desc"
+          onSortChange={(key, dir) => {
+            setSortKey(key);
+            setSortDir(dir);
+            setTopGamesPage(0);
+          }}
           onRowClick={(game) => onSelectGame(game.universeId)}
           loading={allGamesLoading}
           loadingMessage="Loading top games..."

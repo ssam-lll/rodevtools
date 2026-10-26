@@ -1,4 +1,3 @@
-
 export interface HistoricalCCUPoint {
   day: string;
   ccu: number;
@@ -14,7 +13,6 @@ export interface DailyMetric {
   day: string;
   ccu: number;
   visits: number;
-  playtime: number;
   revenue: number;
   [key: string]: string | number | undefined;
 }
@@ -34,7 +32,6 @@ export interface XRayGameDetails {
   monthlyRevenue: number;
   historicalCCU: HistoricalCCUPoint[];
   historicalRevenue: HistoricalRevenuePoint[];
-  playtime?: number;
   dailyMetrics?: DailyMetric[];
 }
 
@@ -68,7 +65,14 @@ export interface GameCompareData {
   monthlyRevenue: number;
   visits: number;
   healthScore: number;
-  playtime: number;
+}
+
+export interface MarketSummary {
+  totalTrackedGames: number;
+  totalActivePlayers: number;
+  totalVisits: number;
+  averageRating: number;
+  estimatedMarketMonthlyRevenueUsd: number;
 }
 
 export interface PaginatedResponse<T> {

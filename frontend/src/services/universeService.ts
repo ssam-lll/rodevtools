@@ -4,6 +4,7 @@ import type {
   XRayGameDetails,
   RisingStarGame,
   GameCompareData,
+  MarketSummary,
   PaginatedResponse,
   TopGamesParams,
   RisingGamesParams,
@@ -96,5 +97,31 @@ export const universeService = {
     return apiClient.get<XRayGameDetails | null>(`/api/universes/${id}`, {
       signal,
     });
+  },
+
+  async getMarketSummary(signal?: AbortSignal): Promise<MarketSummary> {
+    return apiClient.get<MarketSummary>("/api/universes/stats/summary", { signal });
+  },
+
+  async syncUniverse(
+    universeId: string | number,
+    token: string,
+    signal?: AbortSignal
+  ): Promise<XRayGameDetails> {
+    return apiClient.post<XRayGameDetails>(
+      "/api/universes/" + universeId + "/sync",
+      undefined,
+      {
+        headers: { Authorization: "Bearer " + token },
+        signal,
+      }
+    );
+  },
+
+  async exportUniverseCsv(
+    universeId: string | number,
+    signal?: AbortSignal
+  ): Promise<string> {
+    return apiClient.get<string>("/api/universes/" + universeId + "/export/csv", { signal });
   },
 };

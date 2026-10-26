@@ -41,6 +41,15 @@ export function AddToCollectionModal({
     }
   }, [isOpen, loadCollections]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   const performAddToCollection = useCallback(
     (collectionName: string) => {
       if (!activeGame) return;
@@ -96,55 +105,33 @@ export function AddToCollectionModal({
   if (!isOpen || !activeGame) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 9999,
-      }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         onClick={onClose}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          backgroundColor: "rgba(16, 19, 26, 0.8)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          transition: "opacity 0.3s ease",
-          cursor: "pointer",
-        }}
+        className="fixed inset-0 bg-background/80 backdrop-blur-md transition-opacity cursor-pointer"
       />
 
       <div
-        className="relative overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low p-8 shadow-2xl z-10 transition-all duration-300 transform scale-100 animate-fade-in"
-        style={{
-          width: "calc(100% - 2rem)",
-          maxWidth: "448px",
-          boxSizing: "border-box",
-        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-collection-title"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low p-8 shadow-2xl z-10 transition-all duration-300 transform scale-100 animate-fade-in"
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-on-surface-variant hover:text-foreground hover:bg-surface-container-high p-1.5 rounded-full transition-colors"
+          aria-label="Close modal"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-foreground hover:bg-surface-container-high rounded-full transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
 
         <div className="flex flex-col items-center mb-6 text-center">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-container to-inverse-primary border border-white/10 flex items-center justify-center shadow-lg mb-3">
-            <FolderOpen className="text-white w-5 h-5" />
+          <div className="w-10 h-10 rounded-lg bg-surface-container-highest border border-outline-variant flex items-center justify-center shadow-lg mb-3">
+            <FolderOpen className="text-foreground w-5 h-5" />
           </div>
-          <h2 className="text-headline-md font-bold text-foreground">Add to Collection</h2>
+          <h2 id="add-collection-title" className="text-headline-md font-bold text-foreground">
+            Add to Collection
+          </h2>
           <p className="text-body-sm text-on-surface-variant mt-1">
             Select a collection to add <span className="text-primary font-semibold">{activeGame.name}</span>
           </p>
@@ -163,7 +150,7 @@ export function AddToCollectionModal({
                   disabled={alreadyContains}
                   className={`w-full flex items-center justify-between p-3 rounded-lg border text-xs font-semibold transition-all ${
                     alreadyContains
-                      ? "bg-surface-container/20 border-outline-variant/30 text-on-surface-variant/40 cursor-not-allowed"
+                      ? "bg-surface-container/20 border-outline-variant/30 text-on-surface-muted cursor-not-allowed"
                       : "bg-surface-container hover:bg-surface-container-high border-outline-variant/50 text-foreground cursor-pointer"
                   }`}
                 >
@@ -192,7 +179,7 @@ export function AddToCollectionModal({
               value={newColName}
               onChange={(e) => setNewColName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreateAndAddCollection()}
-              className="flex-1 px-3 py-2 rounded-lg bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs transition-all"
+              className="flex-1 px-3 py-2 rounded-lg bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs transition-all placeholder:text-on-surface-muted"
             />
             <button
               onClick={handleCreateAndAddCollection}

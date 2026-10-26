@@ -130,38 +130,39 @@ export function XRaySearchBar({ onSearch, onToastMessage }: XRaySearchBarProps) 
             if (searchSuggestions.length > 0) setShowSuggestions(true);
           }}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-surface-container/60 hover:bg-surface-container focus:bg-surface-container border border-primary/30 focus:border-primary focus:outline-none text-sm transition-all placeholder:text-on-surface-variant/50"
+          className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high focus:bg-surface-container-high border border-white/[0.1] focus:border-primary/60 focus:outline-none text-sm transition-all placeholder:text-on-surface-muted shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
         />
         {searchInput && (
           <button
             type="button"
+            aria-label="Clear search"
             onClick={() => {
               setSearchInput("");
               setSearchSuggestions([]);
               setShowSuggestions(false);
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-foreground cursor-pointer"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-md text-on-surface-variant hover:text-foreground cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         )}
       </form>
-      <span className="text-[11px] text-on-surface-variant/60 pl-1 truncate">
+      <span className="text-[11px] text-on-surface-muted pl-1 truncate">
         Search by name, Universe ID, Place ID, or paste Roblox link
       </span>
 
       {showSuggestions && (searchSuggestions.length > 0 || isSearchingSuggestions) && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl bg-surface-container-highest border border-outline-variant/60 shadow-xl overflow-hidden animate-fade-in">
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-xl liquid-glass border shadow-2xl overflow-hidden animate-fade-in">
           {isSearchingSuggestions && searchSuggestions.length === 0 ? (
             <div className="p-3 text-xs text-on-surface-variant text-center">Searching games...</div>
           ) : (
-            <div className="divide-y divide-outline-variant/20 max-h-72 overflow-y-auto">
+            <div className="divide-y divide-white/[0.06] max-h-72 overflow-y-auto">
               {searchSuggestions.map((game) => (
                 <button
                   key={game.universeId}
                   type="button"
                   onClick={() => triggerSearch(game.universeId)}
-                  className="w-full text-left px-3 py-2.5 hover:bg-surface-container flex items-center gap-3 transition-colors cursor-pointer group"
+                  className="w-full text-left px-3 py-2.5 hover:bg-white/[0.06] flex items-center gap-3 transition-colors cursor-pointer group"
                 >
                   <GameThumbnail universeId={String(game.universeId)} size="sm" />
                   <div className="flex-1 min-w-0">
@@ -173,7 +174,7 @@ export function XRaySearchBar({ onSearch, onToastMessage }: XRaySearchBarProps) 
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-[11px] font-mono font-medium text-primary">
+                    <div className="text-[11px] font-mono tabular-nums font-medium text-sky-400">
                       {formatNumber(game.activePlayers)} CCU
                     </div>
                   </div>

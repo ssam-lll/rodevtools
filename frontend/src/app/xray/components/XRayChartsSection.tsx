@@ -6,8 +6,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import type { DailyMetric } from "@/types/universe";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   XAxis,
@@ -22,8 +22,17 @@ interface XRayChartsSectionProps {
   mounted: boolean;
 }
 
+const GLASS_TOOLTIP_STYLE: React.CSSProperties = {
+  backgroundColor: "rgba(12, 12, 15, 0.88)",
+  backdropFilter: "blur(16px)",
+  WebkitBackdropFilter: "blur(16px)",
+  borderColor: "rgba(255, 255, 255, 0.12)",
+  borderRadius: "12px",
+  boxShadow: "0 12px 32px rgba(0, 0, 0, 0.5)",
+};
+
 export function XRayChartsSection({ dailyMetrics = [], mounted }: XRayChartsSectionProps) {
-  const [activeBreakdownTab, setActiveBreakdownTab] = useState<"ccu" | "visits" | "playtime" | "revenue">("visits");
+  const [activeBreakdownTab, setActiveBreakdownTab] = useState<"ccu" | "visits" | "revenue">("visits");
   const [timeframe, setTimeframe] = useState<number | null>(30);
   const [comparisonPeriod, setComparisonPeriod] = useState<number | null>(null);
 
@@ -39,11 +48,11 @@ export function XRayChartsSection({ dailyMetrics = [], mounted }: XRayChartsSect
     }).format(num);
   };
 
-  const getComparisonData = (data: DailyMetric[], dataKey: string) => {
+  const getComparisonData = (data: DailyMetric[], dataKey: "ccu" | "visits" | "revenue") => {
     if (!comparisonPeriod || !data.length) return data;
 
     return data.map((point, idx) => {
-      const baseVal = (point[dataKey] as number) || 0;
+      const baseVal = Number(point[dataKey] || 0);
       const seed = (idx * 7 + comparisonPeriod) % 17;
       const variation = 0.82 + (seed / 17) * 0.18;
       return {
@@ -63,33 +72,34 @@ export function XRayChartsSection({ dailyMetrics = [], mounted }: XRayChartsSect
 
   return (
     <Card>
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-outline-variant/30 pb-4">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
         <div>
           <CardTitle className="text-base font-bold flex items-center gap-2">
-            <Activity className="w-4 h-4 text-primary" />
+            <Activity className="w-4 h-4 text-sky-400" />
             Performance History
           </CardTitle>
           <CardDescription className="mt-1">
-            Daily history for concurrent players, visits, playtime, and revenue.
+            Daily history for concurrent players, visits, and estimated revenue.
           </CardDescription>
         </div>
 
-        <div className="flex flex-wrap gap-1 bg-surface-container-low/60 border border-outline-variant/20 p-1 rounded-lg self-start">
-          {[
-            { id: "ccu", label: "Players (CCU)" },
-            { id: "visits", label: "Daily Visits" },
-            { id: "playtime", label: "Avg Session" },
-            { id: "revenue", label: "Est. Revenue" },
-          ].map((tab) => {
+        <div className="flex flex-wrap gap-1 bg-surface-container-low/80 border border-white/[0.06] p-1 rounded-xl self-start">
+          {(
+            [
+              { id: "ccu", label: "Players (CCU)" },
+              { id: "visits", label: "Daily Visits" },
+              { id: "revenue", label: "Est. Revenue" },
+            ] as const
+          ).map((tab) => {
             const isActive = activeBreakdownTab === tab.id;
             return (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveBreakdownTab(tab.id as any)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                onClick={() => setActiveBreakdownTab(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   isActive
-                    ? "bg-surface-container-highest text-foreground border border-outline/50 shadow-sm"
+                    ? "bg-surface-container-highest text-foreground border border-white/[0.1] shadow-sm"
                     : "text-on-surface-variant hover:text-foreground border border-transparent"
                 }`}
               >
@@ -100,9 +110,9 @@ export function XRayChartsSection({ dailyMetrics = [], mounted }: XRayChartsSect
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-outline-variant/30">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-white/[0.06]">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-on-surface-variant font-mono font-medium mr-1">Timeframe:</span>
+            <span className="text-xs text-on-surface-muted font-mono font-medium mr-1">Timeframe:</span>
             {[
               { label: "7d", value: 7 },
               { label: "30d", value: 30 },
@@ -111,11 +121,12 @@ export function XRayChartsSection({ dailyMetrics = [], mounted }: XRayChartsSect
             ].map((tf) => (
               <button
                 key={tf.label}
+                type="button"
                 onClick={() => {
                   setTimeframe(tf.value);
                   setComparisonPeriod(null);
                 }}
-                className={`px-3 py-1 rounded-md text-xs font-semibold font-mono transition-all cursor-pointer ${
+                className={`px-3 py-1 rounded-md text-xs font-semibold font-mono tabular-nums transition-all cursor-pointer ${
                   timeframe === tf.value
                     ? "bg-foreground text-background font-bold border border-foreground"
                     : "text-on-surface-variant hover:text-foreground hover:bg-surface-container-high border border-transparent"
@@ -137,6 +148,7 @@ export function XRayChartsSection({ dailyMetrics = [], mounted }: XRayChartsSect
             return (
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() =>
                     setComparisonPeriod(comparisonPeriod === option.value ? null : option.value)
                   }
@@ -158,19 +170,19 @@ export function XRayChartsSection({ dailyMetrics = [], mounted }: XRayChartsSect
             <ResponsiveContainer width="100%" height="100%">
               {activeBreakdownTab === "visits" ? (
                 <BarChart data={consolidatedChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis dataKey="day" stroke="#71717a" fontSize={11} />
-                  <YAxis stroke="#71717a" fontSize={11} tickFormatter={(val) => formatNumber(val)} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis dataKey="day" stroke="#8b8b93" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#8b8b93" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => formatNumber(val)} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
-                    labelStyle={{ color: "#f4f4f5" }}
-                    formatter={(val) => [formatNumber(val as number), "New Visits"]}
+                    contentStyle={GLASS_TOOLTIP_STYLE}
+                    labelStyle={{ color: "#fafafa", fontWeight: 600, marginBottom: "4px" }}
+                    formatter={(val) => [formatNumber(Number(val)), "New Visits"]}
                   />
                   {comparisonPeriod && <Legend />}
                   <Bar
                     dataKey="visits"
                     name="Current Visits"
-                    fill="#f4f4f5"
+                    fill="#38bdf8"
                     fillOpacity={0.9}
                     radius={[4, 4, 0, 0]}
                   />
@@ -179,110 +191,95 @@ export function XRayChartsSection({ dailyMetrics = [], mounted }: XRayChartsSect
                       dataKey="visits_prev"
                       name={`Previous ${comparisonPeriod}d`}
                       fill="#71717a"
-                      fillOpacity={0.4}
+                      fillOpacity={0.35}
                       radius={[4, 4, 0, 0]}
                     />
                   )}
                 </BarChart>
               ) : activeBreakdownTab === "ccu" ? (
-                <LineChart data={consolidatedChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis dataKey="day" stroke="#71717a" fontSize={11} />
-                  <YAxis stroke="#71717a" fontSize={11} tickFormatter={(val) => formatNumber(val)} />
+                <AreaChart data={consolidatedChartData}>
+                  <defs>
+                    <linearGradient id="xrayCcuFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis dataKey="day" stroke="#8b8b93" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#8b8b93" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => formatNumber(val)} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
-                    labelStyle={{ color: "#f4f4f5" }}
-                    formatter={(val) => [formatNumber(val as number), "Avg CCU"]}
+                    contentStyle={GLASS_TOOLTIP_STYLE}
+                    labelStyle={{ color: "#fafafa", fontWeight: 600, marginBottom: "4px" }}
+                    formatter={(val) => [formatNumber(Number(val)), "Avg CCU"]}
                   />
                   {comparisonPeriod && <Legend />}
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="ccu"
                     name="Current Avg CCU"
-                    stroke="#f4f4f5"
+                    stroke="#38bdf8"
                     strokeWidth={2.5}
-                    dot={{ r: 4 }}
+                    fill="url(#xrayCcuFill)"
+                    fillOpacity={1}
+                    dot={false}
+                    activeDot={{ r: 5 }}
                     connectNulls
                   />
                   {comparisonPeriod && (
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="ccu_prev"
                       name={`Previous ${comparisonPeriod}d`}
-                      stroke="#71717a"
+                      stroke="#8b8b93"
                       strokeWidth={1.5}
                       strokeDasharray="5 5"
-                      strokeOpacity={0.5}
+                      fillOpacity={0}
                       dot={false}
                     />
                   )}
-                </LineChart>
-              ) : activeBreakdownTab === "playtime" ? (
-                <LineChart data={consolidatedChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis dataKey="day" stroke="#71717a" fontSize={11} />
-                  <YAxis stroke="#71717a" fontSize={11} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
-                    labelStyle={{ color: "#f4f4f5" }}
-                    formatter={(val) => [`${val} mins`, "Avg Session"]}
-                  />
-                  {comparisonPeriod && <Legend />}
-                  <Line
-                    type="monotone"
-                    dataKey="playtime"
-                    name="Current Avg Session"
-                    stroke="#34d399"
-                    strokeWidth={2.5}
-                    dot={{ r: 4 }}
-                    connectNulls
-                  />
-                  {comparisonPeriod && (
-                    <Line
-                      type="monotone"
-                      dataKey="playtime_prev"
-                      name={`Previous ${comparisonPeriod}d`}
-                      stroke="#34d399"
-                      strokeWidth={1.5}
-                      strokeDasharray="5 5"
-                      strokeOpacity={0.4}
-                      dot={false}
-                    />
-                  )}
-                </LineChart>
+                </AreaChart>
               ) : (
-                <LineChart data={consolidatedChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis dataKey="day" stroke="#71717a" fontSize={11} />
-                  <YAxis stroke="#71717a" fontSize={11} tickFormatter={(val) => formatCurrency(val)} />
+                <AreaChart data={consolidatedChartData}>
+                  <defs>
+                    <linearGradient id="xrayRevenueFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#fbbf24" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis dataKey="day" stroke="#8b8b93" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#8b8b93" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => formatCurrency(val)} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
-                    labelStyle={{ color: "#f4f4f5" }}
-                    formatter={(val) => [formatCurrency(val as number), "Est. Revenue"]}
+                    contentStyle={GLASS_TOOLTIP_STYLE}
+                    labelStyle={{ color: "#fafafa", fontWeight: 600, marginBottom: "4px" }}
+                    formatter={(val) => [formatCurrency(Number(val)), "Est. Revenue"]}
                   />
                   {comparisonPeriod && <Legend />}
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="revenue"
                     name="Current Daily Revenue"
                     stroke="#fbbf24"
                     strokeWidth={2.5}
-                    dot={{ r: 4 }}
+                    fill="url(#xrayRevenueFill)"
+                    fillOpacity={1}
+                    dot={false}
+                    activeDot={{ r: 5 }}
                     connectNulls
                   />
                   {comparisonPeriod && (
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="revenue_prev"
                       name={`Previous ${comparisonPeriod}d`}
-                      stroke="#fbbf24"
+                      stroke="#8b8b93"
                       strokeWidth={1.5}
                       strokeDasharray="5 5"
-                      strokeOpacity={0.4}
+                      fillOpacity={0}
                       dot={false}
                     />
                   )}
-                </LineChart>
+                </AreaChart>
               )}
             </ResponsiveContainer>
           ) : (

@@ -31,6 +31,8 @@ function XRayDashboard() {
   const mounted = useIsMounted();
   const [activeGame, setActiveGame] = useState<XRayGameDetails | null>(null);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -97,6 +99,48 @@ function XRayDashboard() {
     setAddToCollectionModalOpen(true);
   }, [activeGame, user]);
 
+  const handleSync = useCallback(async () => {
+    if (!activeGame) return;
+    if (!user?.token) {
+      setAuthModalOpen(true);
+      return;
+    }
+    setSyncing(true);
+    try {
+      const updated = await universeService.syncUniverse(activeGame.universeId, user.token);
+      setActiveGame(updated);
+      setToastMessage("Live telemetry synchronized");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to synchronize telemetry";
+      setToastMessage(message);
+    } finally {
+      setSyncing(false);
+    }
+  }, [activeGame, user]);
+
+  const handleExportCsv = useCallback(async () => {
+    if (!activeGame) return;
+    setExportingCsv(true);
+    try {
+      const csvText = await universeService.exportUniverseCsv(activeGame.universeId);
+      const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `universe-${activeGame.universeId}-analytics.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setToastMessage("Analytics CSV downloaded");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to export CSV";
+      setToastMessage(message);
+    } finally {
+      setExportingCsv(false);
+    }
+  }, [activeGame]);
+
   return (
     <main className="relative flex-1 bg-background text-foreground p-6 md:p-8">
       <div className="container-max z-10">
@@ -139,6 +183,10 @@ function XRayDashboard() {
               onBack={() => router.push("/xray")}
               onAddToCollection={handleAddToCollection}
               onShare={handleShare}
+              onSync={handleSync}
+              syncing={syncing}
+              onExportCsv={handleExportCsv}
+              exportingCsv={exportingCsv}
             />
             <XRayMetricsGrid game={currentGame} />
             <XRayChartsSection dailyMetrics={currentGame.dailyMetrics} mounted={mounted} />

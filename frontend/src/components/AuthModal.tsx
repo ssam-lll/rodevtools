@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { X, User, Lock, Loader2 } from "lucide-react";
+import Logo from "@/components/Logo";
 import { authService } from "@/services/authService";
 
 interface AuthModalProps {
@@ -18,6 +19,15 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -54,56 +64,31 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   };
 
   return (
-    <div 
-      style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        width: '100vw', 
-        height: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        zIndex: 9999 
-      }}
-    >
-      <div 
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
         onClick={onClose}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(16, 19, 26, 0.8)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          transition: 'opacity 0.3s ease',
-          cursor: 'pointer'
-        }}
+        className="fixed inset-0 bg-background/80 backdrop-blur-md transition-opacity cursor-pointer"
       />
 
-      <div 
-        className="relative overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low p-8 shadow-2xl z-10 transition-all duration-300 transform scale-100"
-        style={{
-          width: 'calc(100% - 2rem)',
-          maxWidth: '448px',
-          boxSizing: 'border-box'
-        }}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low p-8 shadow-2xl z-10 transition-all duration-300 transform scale-100"
       >
-
-        <button 
+        <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-on-surface-variant hover:text-foreground hover:bg-surface-container-high p-1.5 rounded-full transition-colors"
+          aria-label="Close modal"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-foreground hover:bg-surface-container-high rounded-full transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
 
         <div className="flex flex-col items-center mb-6 text-center">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-container to-inverse-primary border border-white/10 flex items-center justify-center shadow-[0_0_12px_rgba(0,175,244,0.2)] mb-3 select-none">
-            <span className="text-white font-black text-[18px] leading-none font-sans">R</span>
+          <div className="mb-3 select-none">
+            <Logo size="sm" />
           </div>
-          <h2 className="text-headline-md font-bold text-foreground">
+          <h2 id="auth-modal-title" className="text-headline-md font-bold text-foreground">
             {isSignUp ? "Create an Account" : "Sign In"}
           </h2>
           <p className="text-body-sm text-on-surface-variant mt-1">
@@ -117,7 +102,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               Email Address
             </label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-outline/60 pointer-events-none">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-on-surface-muted pointer-events-none">
                 <User className="w-4 h-4" />
               </span>
               <Input
@@ -136,7 +121,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               Password
             </label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-outline/60 pointer-events-none">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-on-surface-muted pointer-events-none">
                 <Lock className="w-4 h-4" />
               </span>
               <Input
@@ -157,13 +142,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           )}
 
           {message && (
-            <div className="text-secondary-container bg-on-secondary-container/20 border border-on-secondary-container/30 px-3 py-2 rounded-md text-xs">
+            <div className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-md text-xs">
               {message}
             </div>
           )}
 
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={loading}
             className="w-full flex justify-center items-center gap-2 mt-2 h-10"
           >
@@ -181,9 +166,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           {isSignUp ? (
             <>
               Already have an account?{" "}
-              <button 
+              <button
                 onClick={() => { setIsSignUp(false); setError(null); setMessage(null); setEmail(""); setPassword(""); }}
-                className="text-primary hover:underline font-medium"
+                className="text-primary hover:underline font-medium cursor-pointer"
               >
                 Sign In
               </button>
@@ -191,9 +176,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           ) : (
             <>
               Don&apos;t have an account?{" "}
-              <button 
+              <button
                 onClick={() => { setIsSignUp(true); setError(null); setMessage(null); setEmail(""); setPassword(""); }}
-                className="text-primary hover:underline font-medium"
+                className="text-primary hover:underline font-medium cursor-pointer"
               >
                 Sign up for free
               </button>

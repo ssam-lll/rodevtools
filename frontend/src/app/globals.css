@@ -12,11 +12,12 @@
   --surface-bright: #27272a;
   --surface-container-lowest: #000000;
   --surface-container-low: #0c0c0e;
-  --surface-container: #121215;
+  --surface-container: #111114;
   --surface-container-high: #18181b;
-  --surface-container-highest: #27272a;
+  --surface-container-highest: #232329;
   --on-surface: #fafafa;
   --on-surface-variant: #a1a1aa;
+  --on-surface-muted: #8b8b93;
   --inverse-surface: #fafafa;
   --inverse-on-surface: #18181b;
   --outline: #3f3f46;
@@ -72,11 +73,12 @@
   --color-surface-bright: #27272a;
   --color-surface-container-lowest: #000000;
   --color-surface-container-low: #0c0c0e;
-  --color-surface-container: #121215;
+  --color-surface-container: #111114;
   --color-surface-container-high: #18181b;
-  --color-surface-container-highest: #27272a;
+  --color-surface-container-highest: #232329;
   --color-on-surface: #fafafa;
   --color-on-surface-variant: #a1a1aa;
+  --color-on-surface-muted: #8b8b93;
   --color-inverse-surface: #fafafa;
   --color-inverse-on-surface: #18181b;
   --color-outline: #3f3f46;
@@ -133,6 +135,20 @@
   --radius-full: 9999px;
 }
 
+/* Apple Two-Layer Material System */
+@utility surface-card {
+  background-color: #111114;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06), 0 4px 20px -4px rgba(0, 0, 0, 0.5);
+}
+
+@utility liquid-glass {
+  background-color: rgba(12, 12, 15, 0.78);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
 /* Typography utilities matching DESIGN.md scale */
 @utility text-headline-lg {
   font-family: var(--font-sans);
@@ -176,6 +192,7 @@
   font-size: 18px;
   font-weight: 600;
   line-height: 24px;
+  font-variant-numeric: tabular-nums;
 }
 
 @utility text-data-md {
@@ -183,6 +200,7 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
+  font-variant-numeric: tabular-nums;
 }
 
 @utility text-data-sm {
@@ -190,6 +208,7 @@
   font-size: 12px;
   font-weight: 400;
   line-height: 16px;
+  font-variant-numeric: tabular-nums;
 }
 
 @utility text-label-caps {
@@ -217,6 +236,10 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  .font-mono {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -334,4 +357,22 @@ input::-webkit-inner-spin-button {
 
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .liquid-glass {
+    background-color: #0c0c0f !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }

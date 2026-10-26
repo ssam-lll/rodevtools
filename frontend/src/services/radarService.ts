@@ -27,6 +27,35 @@ export const radarService = {
     });
   },
 
+  async removeBatchFromRadar(
+    universeIds: number[],
+    token: string,
+    signal?: AbortSignal
+  ): Promise<{ message: string; deletedCount: number }> {
+    return apiClient.delete<{ message: string; deletedCount: number }>("/api/radar/batch", {
+      body: { universeIds },
+      headers: { Authorization: "Bearer " + token },
+      signal,
+    });
+  },
+
+  async clearRadar(
+    token: string,
+    signal?: AbortSignal
+  ): Promise<{ message: string; deletedCount: number }> {
+    return apiClient.delete<{ message: string; deletedCount: number }>("/api/radar", {
+      headers: { Authorization: "Bearer " + token },
+      signal,
+    });
+  },
+
+  async exportRadarCsv(token: string, signal?: AbortSignal): Promise<string> {
+    return apiClient.get<string>("/api/radar/export/csv", {
+      headers: { Authorization: "Bearer " + token },
+      signal,
+    });
+  },
+
   async getRadar(token?: string, signal?: AbortSignal): Promise<unknown> {
     const headers: Record<string, string> = {};
     if (token) {

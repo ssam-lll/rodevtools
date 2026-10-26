@@ -1,4 +1,3 @@
-
 export interface ApiRequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
   params?: Record<string, string | number | boolean | undefined>;
@@ -55,11 +54,16 @@ class ApiClient {
 
     let data: unknown = null;
     const text = await response.text();
+    const contentType = response.headers.get("content-type") || "";
     if (text) {
-      try {
-        data = JSON.parse(text);
-      } catch {
+      if (contentType.includes("text/csv")) {
         data = text;
+      } else {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
+        }
       }
     }
 
@@ -87,6 +91,10 @@ class ApiClient {
 
   put<T>(endpoint: string, body?: unknown, options?: ApiRequestOptions): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: "PUT", body });
+  }
+
+  patch<T>(endpoint: string, body?: unknown, options?: ApiRequestOptions): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: "PATCH", body });
   }
 
   delete<T>(endpoint: string, options?: ApiRequestOptions): Promise<T> {

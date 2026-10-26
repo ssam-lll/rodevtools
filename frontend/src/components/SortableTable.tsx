@@ -21,6 +21,7 @@ interface SortableTableProps<T> {
   columns: ColumnDef<T>[];
   defaultSortKey?: string;
   defaultSortDir?: "asc" | "desc";
+  onSortChange?: (key: string, dir: "asc" | "desc") => void;
   onRowClick?: (item: T) => void;
   loading?: boolean;
   loadingMessage?: string;
@@ -39,7 +40,6 @@ function NumericFilterPopover({
   onApply,
   onClear,
   onClose,
-  columnLabel,
 }: {
   initialValue: string;
   onApply: (value: string) => void;
@@ -52,7 +52,7 @@ function NumericFilterPopover({
       if (initialValue && initialValue.startsWith("{")) {
         return JSON.parse(initialValue);
       }
-    } catch (e) {}
+    } catch {}
     return { min: "", max: "" };
   }, [initialValue]);
 
@@ -84,26 +84,28 @@ function NumericFilterPopover({
           value={min}
           onChange={(e) => setMin(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleApply()}
-          className="w-full px-3 py-1.5 rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40 font-mono"
+          className="w-full px-3 py-1.5 rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-muted font-mono tabular-nums"
         />
-        <span className="text-on-surface-variant text-xs font-semibold">—</span>
+        <span className="text-on-surface-variant text-xs font-semibold">-</span>
         <input
           type="number"
           placeholder="Max"
           value={max}
           onChange={(e) => setMax(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleApply()}
-          className="w-full px-3 py-1.5 rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40 font-mono"
+          className="w-full px-3 py-1.5 rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-muted font-mono tabular-nums"
         />
       </div>
       <div className="flex gap-2 justify-between mt-2">
         <button
+          type="button"
           onClick={handleClear}
           className="flex-1 px-3 py-1.5 rounded-lg border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/10 transition-all text-center cursor-pointer"
         >
           Clear
         </button>
         <button
+          type="button"
           onClick={handleApply}
           className="flex-1 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container transition-all text-center cursor-pointer"
         >
@@ -149,16 +151,18 @@ function TextFilterPopover({
         onChange={(e) => setVal(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleApply()}
         autoFocus
-        className="w-full px-3 py-1.5 rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-variant/40"
+        className="w-full px-3 py-1.5 rounded bg-surface-container-high border border-outline-variant/60 focus:border-primary focus:outline-none text-xs text-foreground placeholder:text-on-surface-muted"
       />
       <div className="flex gap-2 justify-between mt-2">
         <button
+          type="button"
           onClick={handleClear}
           className="flex-1 px-3 py-1.5 rounded-lg border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/10 transition-all text-center cursor-pointer"
         >
           Clear
         </button>
         <button
+          type="button"
           onClick={handleApply}
           className="flex-1 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container transition-all text-center cursor-pointer"
         >
@@ -176,6 +180,7 @@ export default function SortableTable<T>({
   columns,
   defaultSortKey,
   defaultSortDir = "desc",
+  onSortChange,
   onRowClick,
   loading = false,
   loadingMessage = "Loading data...",
@@ -194,14 +199,15 @@ export default function SortableTable<T>({
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
-  const handleSort = useCallback((key: string) => {
-    if (sortKey === key) {
-      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
+  const handleSort = useCallback(
+    (key: string) => {
+      const nextDir: SortDirection = sortKey === key ? (sortDir === "asc" ? "desc" : "asc") : "desc";
       setSortKey(key);
-      setSortDir("desc");
-    }
-  }, [sortKey]);
+      setSortDir(nextDir);
+      onSortChange?.(key, nextDir);
+    },
+    [sortKey, sortDir, onSortChange]
+  );
 
   const handleFilterChange = useCallback((key: string, value: string) => {
     setFilters((prev) => {
@@ -236,7 +242,7 @@ export default function SortableTable<T>({
 
       result = result.filter((item) => {
         const sortVal = col.sortValue ? col.sortValue(item) : "";
-        
+
         if (col.isNumeric && typeof sortVal === "number" && trimmedVal.startsWith("{")) {
           try {
             const { min, max } = JSON.parse(trimmedVal);
@@ -245,8 +251,7 @@ export default function SortableTable<T>({
             if (minNum !== null && sortVal < minNum) return false;
             if (maxNum !== null && sortVal > maxNum) return false;
             return true;
-          } catch (e) {
-          }
+          } catch {}
         }
 
         if (typeof sortVal === "number") {
@@ -288,9 +293,9 @@ export default function SortableTable<T>({
   const activeFilterCount = Object.keys(filters).length;
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container-lowest/40 backdrop-blur-sm">
+    <div className="w-full overflow-hidden rounded-2xl surface-card">
       {activeFilterCount > 0 && (
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/30 bg-surface-container/30">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/30 bg-surface-container-low/60">
           <Filter className="w-3.5 h-3.5 text-primary" />
           <span className="text-body-sm text-on-surface-variant">Active filters:</span>
           {Object.entries(filters).map(([key, value]) => {
@@ -306,7 +311,7 @@ export default function SortableTable<T>({
                 } else if (max !== "") {
                   displayValue = `<= ${max}`;
                 }
-              } catch (e) {}
+              } catch {}
             }
             return (
               <span
@@ -314,13 +319,19 @@ export default function SortableTable<T>({
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold"
               >
                 {col?.label}: {displayValue}
-                <button onClick={() => clearFilter(key)} className="hover:text-error transition-colors cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => clearFilter(key)}
+                  aria-label={`Remove ${col?.label} filter`}
+                  className="p-1 hover:text-error transition-colors cursor-pointer"
+                >
                   <X className="w-3 h-3" />
                 </button>
               </span>
             );
           })}
           <button
+            type="button"
             onClick={() => setFilters({})}
             className="text-xs text-on-surface-variant hover:text-error font-semibold ml-auto transition-colors cursor-pointer"
           >
@@ -332,13 +343,33 @@ export default function SortableTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-outline-variant/60 bg-surface-container/50">
+            <tr className="border-b border-white/[0.06] bg-surface-container-low/80">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3.5 text-label-caps text-on-surface-variant font-semibold select-none relative ${
+                  aria-sort={
+                    col.sortable
+                      ? sortKey === col.key
+                        ? sortDir === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                      : undefined
+                  }
+                  tabIndex={col.sortable ? 0 : undefined}
+                  onKeyDown={
+                    col.sortable
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort(col.key);
+                          }
+                        }
+                      : undefined
+                  }
+                  className={`px-4 py-3.5 text-label-caps text-on-surface-muted font-semibold select-none relative ${
                     col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"
-                  } ${col.sortable ? "cursor-pointer hover:text-primary group/th transition-colors" : ""}`}
+                  } ${col.sortable ? "cursor-pointer hover:text-foreground focus-visible:outline-none focus-visible:text-foreground group/th transition-colors" : ""}`}
                   style={col.width ? { width: col.width } : undefined}
                   onClick={col.sortable ? () => handleSort(col.key) : undefined}
                 >
@@ -348,23 +379,25 @@ export default function SortableTable<T>({
                       <span className="inline-flex flex-col">
                         {sortKey === col.key ? (
                           sortDir === "asc" ? (
-                            <ChevronUp className="w-3.5 h-3.5 text-primary" />
+                            <ChevronUp className="w-3.5 h-3.5 text-foreground" />
                           ) : (
-                            <ChevronDown className="w-3.5 h-3.5 text-primary" />
+                            <ChevronDown className="w-3.5 h-3.5 text-foreground" />
                           )
                         ) : (
-                          <ChevronsUpDown className="w-3.5 h-3.5 opacity-30 group-hover/th:opacity-70 transition-opacity" />
+                          <ChevronsUpDown className="w-3.5 h-3.5 opacity-40 group-hover/th:opacity-80 transition-opacity" />
                         )}
                       </span>
                     )}
                     {col.filterable && (
                       <button
+                        type="button"
+                        aria-label={`Filter by ${col.label}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveFilter(activeFilter === col.key ? null : col.key);
                         }}
-                        className={`p-1 rounded hover:bg-primary/10 transition-colors ${
-                          filters[col.key] ? "text-primary" : "text-on-surface-variant/40 hover:text-on-surface-variant"
+                        className={`w-7 h-7 flex items-center justify-center rounded hover:bg-white/[0.06] transition-colors cursor-pointer ${
+                          filters[col.key] ? "text-primary" : "text-on-surface-muted hover:text-on-surface-variant"
                         }`}
                       >
                         <Filter className="w-3 h-3" />
@@ -373,15 +406,15 @@ export default function SortableTable<T>({
                   </div>
                   {col.filterable && activeFilter === col.key && (
                     <>
-                      <div 
+                      <div
                         className="fixed inset-0 z-40 bg-transparent cursor-default"
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveFilter(null);
                         }}
                       />
-                      <div 
-                        className="absolute right-0 mt-2 p-4 rounded-xl border border-outline bg-surface-container shadow-2xl z-50 text-left cursor-default font-normal normal-case tracking-normal"
+                      <div
+                        className="absolute right-0 mt-2 p-4 rounded-xl border liquid-glass shadow-2xl z-50 text-left cursor-default font-normal normal-case tracking-normal"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {col.isNumeric ? (
@@ -408,7 +441,7 @@ export default function SortableTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant/30">
+          <tbody className="divide-y divide-white/[0.05]">
             {loading ? (
               <tr>
                 <td colSpan={columns.length} className="py-12 px-4 text-center text-body-md text-on-surface-variant font-mono">
@@ -422,7 +455,19 @@ export default function SortableTable<T>({
               processedData.map((item, idx) => (
                 <tr
                   key={rowKey(item)}
-                  className={`hover:bg-surface-container-high/40 transition-colors ${
+                  tabIndex={onRowClick ? 0 : undefined}
+                  role={onRowClick ? "button" : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onRowClick(item);
+                          }
+                        }
+                      : undefined
+                  }
+                  className={`hover:bg-white/[0.03] focus-visible:outline-none focus-visible:bg-white/[0.05] transition-colors ${
                     onRowClick ? "cursor-pointer" : ""
                   } ${rowClassName}`}
                   onClick={onRowClick ? () => onRowClick(item) : undefined}
@@ -451,15 +496,15 @@ export default function SortableTable<T>({
       </div>
 
       {hasPagination && (
-        <div className="flex items-center justify-between px-4 py-3.5 border-t border-outline-variant/30 bg-surface-container/30">
-          <span className="text-xs text-on-surface-variant font-mono">
+        <div className="flex items-center justify-between px-4 py-3.5 border-t border-white/[0.06] bg-surface-container-low/60">
+          <span className="text-xs text-on-surface-variant font-mono tabular-nums">
             {totalElements !== undefined
-              ? `${(currentPage! * (pageSize || 20)) + 1}–${Math.min((currentPage! + 1) * (pageSize || 20), totalElements)} of ${totalElements.toLocaleString()}`
-              : `Page ${(currentPage || 0) + 1} of ${totalPages}`
-            }
+              ? `${currentPage! * (pageSize || 20) + 1}–${Math.min((currentPage! + 1) * (pageSize || 20), totalElements)} of ${totalElements.toLocaleString()}`
+              : `Page ${(currentPage || 0) + 1} of ${totalPages}`}
           </span>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => onPageChange!(currentPage! - 1)}
               disabled={currentPage === 0}
               className="px-3 py-1.5 rounded-md text-xs font-semibold border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
@@ -473,9 +518,10 @@ export default function SortableTable<T>({
               for (let i = start; i < end; i++) pages.push(i);
               return pages.map((p) => (
                 <button
+                  type="button"
                   key={p}
                   onClick={() => onPageChange!(p)}
-                  className={`w-8 h-8 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                  className={`w-8 h-8 rounded-md text-xs font-semibold font-mono tabular-nums transition-all cursor-pointer ${
                     p === currentPage
                       ? "bg-primary text-on-primary shadow-sm"
                       : "border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30"
@@ -486,6 +532,7 @@ export default function SortableTable<T>({
               ));
             })()}
             <button
+              type="button"
               onClick={() => onPageChange!(currentPage! + 1)}
               disabled={currentPage === totalPages! - 1}
               className="px-3 py-1.5 rounded-md text-xs font-semibold border border-outline-variant/40 hover:bg-surface-container-high hover:border-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"

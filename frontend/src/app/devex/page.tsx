@@ -2,9 +2,7 @@
 
 import React, { useState } from "react";
 import { 
-  Calculator, 
   AlertTriangle, 
-  CheckCircle2, 
   Info, 
   ArrowLeftRight, 
   CreditCard, 
@@ -314,12 +312,12 @@ export default function DevExPage() {
                         >
                           <div className="flex items-center justify-between w-full mb-2">
                             <Icon className={`w-4 h-4 ${isActive ? "text-foreground" : "text-on-surface-variant"}`} />
-                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-surface-container-high">
+                            <span className="text-xs font-mono font-bold px-1.5 py-0.5 rounded bg-surface-container-high">
                               {method.name === "PayPal" ? "2%" : method.name === "Wire Transfer" ? "$25" : method.name === "Physical Check" ? "$3" : "$1.50"}
                             </span>
                           </div>
                           <span className="text-xs font-bold text-foreground block">{method.name}</span>
-                          <span className="text-[10px] text-on-surface-variant mt-0.5 leading-tight line-clamp-1">{method.processingTime}</span>
+                          <span className="text-xs text-on-surface-variant mt-0.5 leading-tight line-clamp-1">{method.processingTime}</span>
                         </button>
                       );
                     })}
@@ -391,41 +389,45 @@ export default function DevExPage() {
                     <div className="text-3xl font-bold font-mono text-emerald-400">
                       {formatCurrency(netEarnings)}
                     </div>
-                    <span className="text-[11px] text-on-surface-variant/80 mt-1 block">
+                    <span className="text-[11px] text-on-surface-variant mt-1 block">
                       From {formatNumber(currentRobux)} Robux gross conversion
                     </span>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <div className="flex h-2 rounded-full overflow-hidden bg-surface-container-highest">
+                  <div className="space-y-2">
+                    <div className="flex h-3.5 gap-1 p-0.5 rounded-full overflow-hidden bg-surface-container-highest border border-outline-variant/40">
                       <div 
-                        className="bg-emerald-400 h-full transition-all duration-300" 
+                        className="bg-emerald-400 h-full rounded-full transition-all duration-300" 
                         style={{ width: `${currentUsd > 0 ? (netEarnings / currentUsd) * 100 : 100}%` }}
                         title="Net Payout"
                       />
-                      <div 
-                        className="bg-red-400 h-full transition-all duration-300" 
-                        style={{ width: `${currentUsd > 0 ? (estimatedTax / currentUsd) * 100 : 0}%` }}
-                        title="Withholding Tax"
-                      />
-                      <div 
-                        className="bg-amber-400 h-full transition-all duration-300" 
-                        style={{ width: `${currentUsd > 0 ? (paymentMethodFee / currentUsd) * 100 : 0}%` }}
-                        title="Method Fee"
-                      />
+                      {estimatedTax > 0 && (
+                        <div 
+                          className="bg-red-400 h-full rounded-full transition-all duration-300" 
+                          style={{ width: `${currentUsd > 0 ? (estimatedTax / currentUsd) * 100 : 0}%` }}
+                          title="Withholding Tax"
+                        />
+                      )}
+                      {paymentMethodFee > 0 && (
+                        <div 
+                          className="bg-amber-400 h-full rounded-full transition-all duration-300" 
+                          style={{ width: `${currentUsd > 0 ? (paymentMethodFee / currentUsd) * 100 : 0}%` }}
+                          title="Method Fee"
+                        />
+                      )}
                     </div>
-                    <div className="flex justify-between text-[10px] text-on-surface-variant font-mono">
-                      <span className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                    <div className="flex justify-between text-xs text-on-surface-variant font-mono">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
                         Net ({currentUsd > 0 ? Math.round((netEarnings / currentUsd) * 100) : 100}%)
                       </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-400 inline-block" />
                         Tax ({TAX_RATE}%)
                       </span>
                       {paymentMethodFee > 0 && (
-                        <span className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
                           Fee ({currentUsd > 0 ? Math.round((paymentMethodFee / currentUsd) * 100) : 0}%)
                         </span>
                       )}
@@ -529,7 +531,7 @@ export default function DevExPage() {
 
                   <div className="flex items-center justify-between p-3.5 rounded-lg bg-surface-container/40 border border-outline-variant/30">
                     <div className="flex items-center gap-2">
-                      <Crown className={`w-4 h-4 ${hasPremium ? "text-amber-400" : "text-on-surface-variant/40"}`} />
+                      <Crown className={`w-4 h-4 ${hasPremium ? "text-amber-400" : "text-on-surface-muted"}`} />
                       <div>
                         <span className="text-xs font-bold block text-foreground">Roblox Premium (Seller)</span>
                         <span className="text-[11px] text-on-surface-variant block mt-0.5">Lowers marketplace item commission from 30% to 10%</span>
@@ -537,13 +539,16 @@ export default function DevExPage() {
                     </div>
                     <button
                       type="button"
+                      role="switch"
+                      aria-checked={hasPremium}
+                      aria-label="Toggle Roblox Premium seller fee"
                       onClick={() => setHasPremium(!hasPremium)}
                       className="cursor-pointer text-primary transition-transform active:scale-95"
                     >
                       {hasPremium ? (
                         <ToggleRight className="w-7 h-7 text-primary" />
                       ) : (
-                        <ToggleLeft className="w-7 h-7 text-on-surface-variant/40" />
+                        <ToggleLeft className="w-7 h-7 text-on-surface-muted" />
                       )}
                     </button>
                   </div>
@@ -562,7 +567,7 @@ export default function DevExPage() {
                   <div className="p-3.5 rounded-lg bg-surface-container/40 border border-outline-variant/30 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-foreground">Direct Player-to-Player</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-red-400/10 text-red-400 border border-red-400/20 font-bold font-mono">
+                      <span className="text-xs px-2 py-0.5 rounded bg-red-400/10 text-red-400 border border-red-400/20 font-bold font-mono">
                         30% Tax
                       </span>
                     </div>
@@ -585,7 +590,7 @@ export default function DevExPage() {
                   <div className="p-3.5 rounded-lg bg-surface-container/40 border border-outline-variant/30 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-foreground">Marketplace / Item Sale</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-bold font-mono">
+                      <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-bold font-mono">
                         {marketplaceFeeRate}% Fee
                       </span>
                     </div>

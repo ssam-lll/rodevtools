@@ -1,4 +1,3 @@
-
 export interface UserSession {
   username: string;
   email?: string;
@@ -18,4 +17,13 @@ export interface AuthResponse {
   token?: string;
   message?: string;
   error?: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface DeleteAccountPayload {
+  password: string;
 }
